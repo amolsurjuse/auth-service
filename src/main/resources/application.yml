@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/authdb
+    username: auth_user
+    password: auth_pass
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 16
+          min-idle: 2
+          time-between-eviction-runs: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+app:
+  security:
+    jwt:
+      issuer: "auth-service"
+      secret: "CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME"
+      access-token-ttl-minutes: 15
+      refresh-token-ttl-days: 30
+
+  cookies:
+    refresh-name: "__Host-rt"
+    device-name: "did"
+    same-site: "Strict"
+
+  cache:
+    user-details-ttl-seconds: 300
+
+  redis:
+    refresh-prefix: "rt:"
+    refresh-user-prefix: "rtu:"
+    refresh-device-prefix: "rtd:"
+    denylist-prefix: "deny:jwt:"
+    token-version-prefix: "tv:"
