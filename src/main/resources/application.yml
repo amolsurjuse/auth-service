@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/authdb
-    username: auth_user
-    password: auth_pass
+    url: ${ENV_AUTH_DATASOURCE_URL}
+    username: ${ENV_AUTH_DATASOURCE_USERNAME}
+    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
 
   jpa:
     hibernate:
