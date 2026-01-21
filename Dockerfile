@@ -16,7 +16,7 @@ RUN useradd -ms /bin/bash appuser
 USER appuser
 
 # COPY ONLY THE EXECUTABLE SPRING BOOT JAR
-COPY --from=build /app/target/*SNAPSHOT.jar /app/app.jar
+COPY --from=build /app/target/*.jar /app/app.jar
 
 EXPOSE 8080
 
