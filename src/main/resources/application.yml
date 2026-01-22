@@ -19,6 +19,20 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  redis:
+    host: redis
+    port: 6379
+    password: Password@123
+    timeout: 2000ms
+    lettuce:
+      pool:
+        enabled: true
+        max-active: 16
+        max-idle: 16
+        min-idle: 2
+        time-between-eviction-runs: 30000ms
+    useSsl: false
+
   data:
     redis:
       host: redis.default.svc.cluster.local
