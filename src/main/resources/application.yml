@@ -5,7 +5,7 @@ spring:
   datasource:
     url: ${ENV_AUTH_DATASOURCE_URL}
     username: ${ENV_AUTH_DATASOURCE_USERNAME}
-    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
+    password: Password@123
 
   jpa:
     hibernate:
