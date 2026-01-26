@@ -49,12 +49,14 @@ spring:
 management:
   endpoints:
     web:
-      exposure:
-        include: health,info,metrics
       base-path: /actuator
+      exposure:
+        include: health,info
   endpoint:
     health:
-      show-details: always
+      probes:
+        enabled: true
+      show-details: never
 
 app:
   security:
