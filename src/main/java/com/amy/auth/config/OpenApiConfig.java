@@ -26,7 +26,7 @@ public class OpenApiConfig {
     public GroupedOpenApi publicApis() {
         return GroupedOpenApi.builder()
                 .group("public")
-                .pathsToMatch("/api/**")
+                .pathsToMatch("/**")
                 .build();
     }
 }
