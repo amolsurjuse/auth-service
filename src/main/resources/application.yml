@@ -1,5 +1,15 @@
 server:
   port: 8080
+  error:
+    include-message: always
+    include-stacktrace: always
+
+logging:
+  level:
+    root: INFO
+    org.springdoc: DEBUG
+    io.swagger.v3: DEBUG
+    org.springframework.boot.web.servlet.error: DEBUG
 
 spring:
   datasource:
