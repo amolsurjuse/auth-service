@@ -1,10 +1,12 @@
 package com.amy.auth.service;
 
-import com.amy.auth.domain.RefreshToken;
-import com.amy.auth.domain.User;
+import com.amy.auth.domain.*;
+import com.amy.auth.repository.AddressRepository;
+import com.amy.auth.repository.CountryRepository;
 import com.amy.auth.repository.RefreshTokenRepository;
 import com.amy.auth.repository.RoleRepository;
 import com.amy.auth.repository.UserRepository;
+import com.amy.auth.web.dto.AddressDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AddressRepository addressRepository;
+    private final CountryRepository countryRepository;
 
     private final RedisRefreshSessionStore refreshStore;
     private final TokenVersionService tokenVersionService;
@@ -37,6 +41,8 @@ public class AuthService {
             UserRepository userRepository,
             RoleRepository roleRepository,
             RefreshTokenRepository refreshTokenRepository,
+            AddressRepository addressRepository,
+            CountryRepository countryRepository,
             RedisRefreshSessionStore refreshStore,
             TokenVersionService tokenVersionService,
             JwtService jwtService,
@@ -47,6 +53,8 @@ public class AuthService {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.addressRepository = addressRepository;
+        this.countryRepository = countryRepository;
         this.refreshStore = refreshStore;
         this.tokenVersionService = tokenVersionService;
         this.jwtService = jwtService;
@@ -68,6 +76,36 @@ public class AuthService {
         User user = new User(UUID.randomUUID(), normalized, passwordEncoder.encode(rawPassword), true, now);
 
         // Assign default USER role (seeded by Liquibase)
+        var userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new IllegalStateException("ROLE USER not seeded"));
+        user.addRole(userRole);
+
+        userRepository.save(user);
+        return issueTokens(user, deviceId);
+    }
+
+    @Transactional
+    public TokenPair register(String email, String rawPassword, String deviceId,
+                              String firstName, String lastName, String phoneNumber, AddressDto addressDto) {
+        String normalized = email.toLowerCase();
+        if (userRepository.existsByEmail(normalized)) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        User user = new User(UUID.randomUUID(), normalized, passwordEncoder.encode(rawPassword), true, now);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setPhoneNumber(phoneNumber);
+
+        if (addressDto != null) {
+            Address address = buildAddress(addressDto);
+            if (address != null) {
+                addressRepository.save(address);
+                user.setAddress(address);
+            }
+        }
+
         var userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new IllegalStateException("ROLE USER not seeded"));
         user.addRole(userRole);
@@ -167,5 +205,23 @@ public class AuthService {
             throw new IllegalStateException("Unable to hash", e);
         }
     }
-}
 
+    private Address buildAddress(AddressDto dto) {
+        if (dto == null) return null;
+
+        Country country = null;
+        if (dto.countryIsoCode() != null && !dto.countryIsoCode().isBlank()) {
+            country = countryRepository.findByIsoCode(dto.countryIsoCode())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid country code"));
+        }
+
+        return new Address(
+                UUID.randomUUID(),
+                dto.street(),
+                dto.city(),
+                dto.state(),
+                dto.postalCode(),
+                country
+        );
+    }
+}

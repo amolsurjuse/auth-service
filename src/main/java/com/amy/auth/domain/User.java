@@ -16,6 +16,19 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    @Column(name = "phone_number", length = 16)
+    private String phoneNumber;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -50,8 +63,16 @@ public class User {
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public Address getAddress() { return address; }
     public boolean isEnabled() { return enabled; }
     public Set<Role> getRoles() { return roles; }
 
     public void addRole(Role role) { this.roles.add(role); }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setAddress(Address address) { this.address = address; }
 }

@@ -1,11 +1,21 @@
 server:
   port: 8080
+  error:
+    include-message: always
+    include-stacktrace: always
+
+logging:
+  level:
+    root: DEBUG
+    org.springdoc: DEBUG
+    io.swagger.v3: DEBUG
+    org.springframework.boot.web.servlet.error: DEBUG
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/authdb
-    username: auth_user
-    password: auth_pass
+    url: ${ENV_AUTH_DATASOURCE_URL}
+    username: ${ENV_AUTH_DATASOURCE_USERNAME}
+    password: Password@123
 
   jpa:
     hibernate:
@@ -21,9 +31,10 @@ spring:
 
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
       timeout: 2s
+      password: Password@123
       lettuce:
         pool:
           enabled: true
@@ -35,8 +46,14 @@ spring:
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
-        include: health,info,metrics
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
 
 app:
   security:
@@ -60,3 +77,13 @@ app:
     refresh-device-prefix: "rtd:"
     denylist-prefix: "deny:jwt:"
     token-version-prefix: "tv:"
+
+openapi:
+  enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: false
