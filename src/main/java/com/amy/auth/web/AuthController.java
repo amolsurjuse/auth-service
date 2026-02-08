@@ -46,7 +46,15 @@ public class AuthController {
     ) {
         String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
 
-        AuthService.TokenPair pair = authService.register(req.email(), req.password(), deviceId);
+        AuthService.TokenPair pair = authService.register(
+                req.email(),
+                req.password(),
+                deviceId,
+                req.firstName(),
+                req.lastName(),
+                req.phoneNumber(),
+                req.address()
+        );
         Duration refreshTtl = Duration.ofDays(refreshTtlDays);
 
         return ResponseEntity.ok()
@@ -146,4 +154,3 @@ public class AuthController {
                 .build();
     }
 }
-

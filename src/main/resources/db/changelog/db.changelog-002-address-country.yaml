@@ -1,0 +1,52 @@
+# yaml
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-address-country
+      author: amolsurjuse
+      changes:
+        - createTable:
+            tableName: country
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: iso_code, type: varchar(8), constraints: { nullable: false, unique: true } }
+              - column: { name: name, type: varchar(100), constraints: { nullable: false } }
+
+        - createTable:
+            tableName: address
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: street, type: varchar(255) }
+              - column: { name: city, type: varchar(100) }
+              - column: { name: state, type: varchar(100) }
+              - column: { name: postal_code, type: varchar(20) }
+              - column: { name: country_id, type: uuid }
+
+        - addForeignKeyConstraint:
+            baseTableName: address
+            baseColumnNames: country_id
+            referencedTableName: country
+            referencedColumnNames: id
+            constraintName: fk_address_country
+            onDelete: set null
+
+        - addColumn:
+            tableName: users
+            columns:
+              - column: { name: first_name, type: varchar(100) }
+              - column: { name: last_name, type: varchar(100) }
+              - column: { name: phone_number, type: varchar(16) }
+              - column: { name: address_id, type: uuid }
+
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: address_id
+            referencedTableName: address
+            referencedColumnNames: id
+            constraintName: fk_users_address
+            onDelete: set null
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_address_id
+            columns:
+              - column: { name: address_id }
