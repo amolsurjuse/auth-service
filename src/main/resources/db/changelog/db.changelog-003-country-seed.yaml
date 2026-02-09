@@ -1,0 +1,138 @@
+# yaml
+databaseChangeLog:
+  - changeSet:
+      id: 003-seed-country
+      author: amolsurjuse
+      changes:
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000001" }
+              - column: { name: iso_code, value: "US" }
+              - column: { name: name, value: "United States" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000002" }
+              - column: { name: iso_code, value: "CA" }
+              - column: { name: name, value: "Canada" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000003" }
+              - column: { name: iso_code, value: "GB" }
+              - column: { name: name, value: "United Kingdom" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000004" }
+              - column: { name: iso_code, value: "IE" }
+              - column: { name: name, value: "Ireland" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000005" }
+              - column: { name: iso_code, value: "DE" }
+              - column: { name: name, value: "Germany" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000006" }
+              - column: { name: iso_code, value: "FR" }
+              - column: { name: name, value: "France" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000007" }
+              - column: { name: iso_code, value: "NL" }
+              - column: { name: name, value: "Netherlands" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000008" }
+              - column: { name: iso_code, value: "SE" }
+              - column: { name: name, value: "Sweden" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000009" }
+              - column: { name: iso_code, value: "NO" }
+              - column: { name: name, value: "Norway" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000a" }
+              - column: { name: iso_code, value: "DK" }
+              - column: { name: name, value: "Denmark" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000b" }
+              - column: { name: iso_code, value: "FI" }
+              - column: { name: name, value: "Finland" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000c" }
+              - column: { name: iso_code, value: "ES" }
+              - column: { name: name, value: "Spain" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000d" }
+              - column: { name: iso_code, value: "IT" }
+              - column: { name: name, value: "Italy" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000e" }
+              - column: { name: iso_code, value: "PT" }
+              - column: { name: name, value: "Portugal" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-00000000000f" }
+              - column: { name: iso_code, value: "CH" }
+              - column: { name: name, value: "Switzerland" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000010" }
+              - column: { name: iso_code, value: "AT" }
+              - column: { name: name, value: "Austria" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000011" }
+              - column: { name: iso_code, value: "AU" }
+              - column: { name: name, value: "Australia" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000012" }
+              - column: { name: iso_code, value: "NZ" }
+              - column: { name: name, value: "New Zealand" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000013" }
+              - column: { name: iso_code, value: "JP" }
+              - column: { name: name, value: "Japan" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000014" }
+              - column: { name: iso_code, value: "SG" }
+              - column: { name: name, value: "Singapore" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000015" }
+              - column: { name: iso_code, value: "IN" }
+              - column: { name: name, value: "India" }
+        - insert:
+            tableName: country
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000016" }
+              - column: { name: iso_code, value: "AE" }
+              - column: { name: name, value: "United Arab Emirates" }

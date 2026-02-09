@@ -1,6 +1,7 @@
 package com.amy.auth.service;
 
 import com.amy.auth.domain.*;
+import com.amy.auth.domain.enums.CountryCode;
 import com.amy.auth.repository.AddressRepository;
 import com.amy.auth.repository.CountryRepository;
 import com.amy.auth.repository.RefreshTokenRepository;
@@ -211,8 +212,11 @@ public class AuthService {
 
         Country country = null;
         if (dto.countryIsoCode() != null && !dto.countryIsoCode().isBlank()) {
-            country = countryRepository.findByIsoCode(dto.countryIsoCode())
+            CountryCode.fromCode(dto.countryIsoCode())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid country code"));
+
+            country = countryRepository.findByIsoCode(dto.countryIsoCode().toUpperCase())
+                    .orElseThrow(() -> new IllegalArgumentException("Country not seeded"));
         }
 
         return new Address(
