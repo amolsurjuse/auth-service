@@ -22,6 +22,7 @@ spring:
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
+    defer-datasource-initialization: ${SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION:true}
     properties:
       hibernate:
         jdbc:

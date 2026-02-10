@@ -12,8 +12,8 @@ import org.springframework.core.env.Environment;
 public class LiquibaseConfig {
 
     @Bean
-    //@ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
-    SpringLiquibase springLiquibase(DataSource dataSource, Environment environment) {
+    @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
+    SpringLiquibase liquibase(DataSource dataSource, Environment environment) {
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog(environment.getProperty(
