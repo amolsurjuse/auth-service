@@ -28,7 +28,7 @@ spring:
 
   liquibase:
     enabled: ${SPRING_LIQUIBASE_ENABLED:true}
-    change-log: ${SPRING_LIQUIBASE_CHANGE_LOG:classpath:/db/changelog/db.changelog-master.yaml}
+    change-log: classpath:db/changelog/db.changelog-master.yaml
 
   data:
     redis:
