@@ -14,9 +14,9 @@ logging:
 
 spring:
   datasource:
-    url: ${ENV_AUTH_DATASOURCE_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/authdb}}
-    username: ${ENV_AUTH_DATASOURCE_USERNAME:${SPRING_DATASOURCE_USERNAME:auth_user}}
-    password: ${ENV_AUTH_DATASOURCE_PASSWORD:${SPRING_DATASOURCE_PASSWORD:auth_pass}}
+    url: ${ENV_AUTH_DATASOURCE_URL}
+    username: ${ENV_AUTH_DATASOURCE_USERNAME}
+    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
 
   jpa:
     hibernate:
