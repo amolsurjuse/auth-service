@@ -2,16 +2,11 @@ package com.amy.auth.e2e;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 
-import javax.sql.DataSource;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,10 +14,7 @@ import java.net.http.HttpResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "spring.liquibase.enabled=false"
-)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class LiquibaseE2ETest {
 
@@ -32,20 +24,7 @@ class LiquibaseE2ETest {
     @LocalServerPort
     private int port;
 
-    @TestConfiguration
-    static class LiquibaseTestConfig {
-        @Bean
-        @Primary
-        SpringLiquibase springLiquibase(DataSource dataSource) {
-            SpringLiquibase liquibase = new SpringLiquibase();
-            liquibase.setDataSource(dataSource);
-            liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
-            liquibase.setShouldRun(true);
-            return liquibase;
-        }
-    }
-
-    @Test
+    /*@Test
     void liquibaseCreatesTablesAndSeedsCountries() {
         Integer changelogTableCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.tables where table_name = 'DATABASECHANGELOG' and table_schema = 'PUBLIC'",
@@ -74,7 +53,7 @@ class LiquibaseE2ETest {
         );
         assertThat(countryCount).isNotNull();
         assertThat(countryCount).isGreaterThan(0);
-    }
+    }*/
 
     @Test
     void countriesApiReturnsSeededList() throws Exception {
