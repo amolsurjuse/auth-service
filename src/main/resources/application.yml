@@ -15,7 +15,7 @@ spring:
   datasource:
     url: ${ENV_AUTH_DATASOURCE_URL}
     username: ${ENV_AUTH_DATASOURCE_USERNAME}
-    password: Password@123
+    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
 
   jpa:
     hibernate:
@@ -27,7 +27,8 @@ spring:
           time_zone: UTC
 
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
 
   data:
     redis:
