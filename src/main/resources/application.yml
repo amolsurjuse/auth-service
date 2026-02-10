@@ -10,12 +10,13 @@ logging:
     com.electrahub.identity: ${LOGGING_LEVEL_COM_ELECTRAHUB_IDENTITY:INFO}
     org.springframework: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:WARN}
     org.hibernate: ${LOGGING_LEVEL_ORG_HIBERNATE:WARN}
+    liquibase: ${LOGGING_LEVEL_LIQUIBASE:INFO}
 
 spring:
   datasource:
-    url: ${ENV_AUTH_DATASOURCE_URL}
-    username: ${ENV_AUTH_DATASOURCE_USERNAME}
-    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
+    url: ${ENV_AUTH_DATASOURCE_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/authdb}}
+    username: ${ENV_AUTH_DATASOURCE_USERNAME:${SPRING_DATASOURCE_USERNAME:auth_user}}
+    password: ${ENV_AUTH_DATASOURCE_PASSWORD:${SPRING_DATASOURCE_PASSWORD:auth_pass}}
 
   jpa:
     hibernate:
