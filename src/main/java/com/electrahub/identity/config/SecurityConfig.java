@@ -27,7 +27,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${app.cors.allowed-origin-patterns:http://localhost:4200,http://localhost:8080,http://driver-portal-dev.electrahub.com:8080}")
+    @Value("${app.cors.allowed-origin-patterns}")
     private String allowedOriginPatterns;
 
     @Bean

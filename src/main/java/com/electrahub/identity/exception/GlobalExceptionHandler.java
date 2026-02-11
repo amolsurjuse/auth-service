@@ -2,6 +2,8 @@ package com.electrahub.identity.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, HttpServletRequest req) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid credentials", req);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AuthorizationDeniedException ex, HttpServletRequest req) {
+        return build(HttpStatus.FORBIDDEN, "Access denied", req);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest req) {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", req);
@@ -40,4 +52,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
     }
 }
-

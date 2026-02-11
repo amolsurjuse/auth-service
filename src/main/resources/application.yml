@@ -59,6 +59,9 @@ management:
       show-details: never
 
 app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:8080,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com,https://driver-portal-dev.electrahub.com:8443,https://driver-portal-*.electrahub.com,https://driver-portal-*.electrahub.com:*}
+
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
