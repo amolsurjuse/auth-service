@@ -1,47 +1,50 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   error:
     include-message: always
     include-stacktrace: always
 
 logging:
   level:
-    root: DEBUG
-    org.springdoc: DEBUG
-    io.swagger.v3: DEBUG
-    org.springframework.boot.web.servlet.error: DEBUG
+    root: ${LOGGING_LEVEL_ROOT:INFO}
+    com.electrahub.identity: ${LOGGING_LEVEL_COM_ELECTRAHUB_IDENTITY:INFO}
+    org.springframework: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:WARN}
+    org.hibernate: ${LOGGING_LEVEL_ORG_HIBERNATE:WARN}
+    liquibase: ${LOGGING_LEVEL_LIQUIBASE:INFO}
 
 spring:
   datasource:
     url: ${ENV_AUTH_DATASOURCE_URL}
     username: ${ENV_AUTH_DATASOURCE_USERNAME}
-    password: Password@123
+    password: ${ENV_AUTH_DATASOURCE_PASSWORD}
 
   jpa:
     hibernate:
-      ddl-auto: validate
-    open-in-view: false
+      ddl-auto: none
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
+    defer-datasource-initialization: ${SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION:true}
     properties:
       hibernate:
         jdbc:
-          time_zone: UTC
+          time_zone: ${SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE:UTC}
 
   liquibase:
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
   data:
     redis:
-      host: redis
-      port: 6379
-      timeout: 2s
-      password: Password@123
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:2s}
+      password: ${SPRING_DATA_REDIS_PASSWORD:Password@123}
       lettuce:
         pool:
-          enabled: true
-          max-active: 16
-          max-idle: 16
-          min-idle: 2
-          time-between-eviction-runs: 30s
+          enabled: ${SPRING_DATA_REDIS_LETTUCE_POOL_ENABLED:true}
+          max-active: ${SPRING_DATA_REDIS_LETTUCE_POOL_MAX_ACTIVE:16}
+          max-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE:16}
+          min-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE:2}
+          time-between-eviction-runs: ${SPRING_DATA_REDIS_LETTUCE_POOL_TIME_BETWEEN_EVICTION_RUNS:30s}
 
 management:
   endpoints:
@@ -58,32 +61,32 @@ management:
 app:
   security:
     jwt:
-      issuer: "auth-service"
-      secret: "CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME"
-      access-token-ttl-minutes: 15
-      refresh-token-ttl-days: 30
+      issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
+      secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
+      access-token-ttl-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_MINUTES:15}
+      refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
 
   cookies:
-    refresh-name: "__Host-rt"
-    device-name: "did"
-    same-site: "Strict"
+    refresh-name: ${APP_COOKIES_REFRESH_NAME:__Host-rt}
+    device-name: ${APP_COOKIES_DEVICE_NAME:did}
+    same-site: ${APP_COOKIES_SAME_SITE:Strict}
 
   cache:
-    user-details-ttl-seconds: 300
+    user-details-ttl-seconds: ${APP_CACHE_USER_DETAILS_TTL_SECONDS:300}
 
   redis:
-    refresh-prefix: "rt:"
-    refresh-user-prefix: "rtu:"
-    refresh-device-prefix: "rtd:"
-    denylist-prefix: "deny:jwt:"
-    token-version-prefix: "tv:"
+    refresh-prefix: ${APP_REDIS_REFRESH_PREFIX:rt:}
+    refresh-user-prefix: ${APP_REDIS_REFRESH_USER_PREFIX:rtu:}
+    refresh-device-prefix: ${APP_REDIS_REFRESH_DEVICE_PREFIX:rtd:}
+    denylist-prefix: ${APP_REDIS_DENYLIST_PREFIX:deny:jwt:}
+    token-version-prefix: ${APP_REDIS_TOKEN_VERSION_PREFIX:tv:}
 
 openapi:
-  enabled: true
+  enabled: ${OPENAPI_ENABLED:true}
 
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    path: ${SPRINGDOC_API_DOCS_PATH:/v3/api-docs}
   swagger-ui:
-    path: /swagger-ui.html
-    disable-swagger-default-url: false
+    path: ${SPRINGDOC_SWAGGER_UI_PATH:/swagger-ui.html}
+    disable-swagger-default-url: ${SPRINGDOC_SWAGGER_UI_DISABLE_DEFAULT_URL:false}

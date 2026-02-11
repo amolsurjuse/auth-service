@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/001-init.yaml
   - include:
       file: db/changelog/db.changelog-002-address-country.yaml
+  - include:
+      file: db/changelog/db.changelog-003-country-seed.yaml
