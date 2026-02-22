@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/db.changelog-002-address-country.yaml
   - include:
       file: db/changelog/db.changelog-003-country-seed.yaml
+  - include:
+      file: db/changelog/db.changelog-004-country-dialcode-enabled.yaml

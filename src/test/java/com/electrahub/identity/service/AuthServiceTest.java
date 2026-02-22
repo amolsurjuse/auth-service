@@ -76,8 +76,8 @@ class AuthServiceTest {
         );
 
         AddressDto addressDto = new AddressDto("street", "city", "state", "12345", "US");
-        Country country = new Country(UUID.randomUUID(), "US", "United States");
-        when(countryRepository.findByIsoCode("US")).thenReturn(Optional.of(country));
+        Country country = new Country(UUID.randomUUID(), "US", "United States", "+1", true);
+        when(countryRepository.findByIsoCodeAndEnabledTrue("US")).thenReturn(Optional.of(country));
 
         AuthService.TokenPair pair = service.register("User@Example.com", "password", "device", "First", "Last", "+12345678901", addressDto);
 

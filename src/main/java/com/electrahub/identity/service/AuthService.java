@@ -1,7 +1,6 @@
 package com.electrahub.identity.service;
 
 import com.electrahub.identity.domain.*;
-import com.electrahub.identity.domain.enums.CountryCode;
 import com.electrahub.identity.repository.AddressRepository;
 import com.electrahub.identity.repository.CountryRepository;
 import com.electrahub.identity.repository.RefreshTokenRepository;
@@ -212,11 +211,8 @@ public class AuthService {
 
         Country country = null;
         if (dto.countryIsoCode() != null && !dto.countryIsoCode().isBlank()) {
-            CountryCode.fromCode(dto.countryIsoCode())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid country code"));
-
-            country = countryRepository.findByIsoCode(dto.countryIsoCode().toUpperCase())
-                    .orElseThrow(() -> new IllegalArgumentException("Country not seeded"));
+            country = countryRepository.findByIsoCodeAndEnabledTrue(dto.countryIsoCode().toUpperCase())
+                    .orElseThrow(() -> new IllegalArgumentException("Country not available"));
         }
 
         return new Address(

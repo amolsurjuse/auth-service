@@ -71,7 +71,8 @@ class LiquibaseE2ETest {
         assertThat(body.length).isGreaterThan(0);
         assertThat(body[0].code()).isNotBlank();
         assertThat(body[0].name()).isNotBlank();
+        assertThat(body[0].dialCode()).startsWith("+");
     }
 
-    private record CountryView(String code, String name) {}
+    private record CountryView(String code, String name, String dialCode) {}
 }

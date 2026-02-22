@@ -10,7 +10,7 @@ class AddressTest {
 
     @Test
     void constructorSetsFields() {
-        Country country = new Country(UUID.randomUUID(), "US", "United States");
+        Country country = new Country(UUID.randomUUID(), "US", "United States", "+1", true);
         Address address = new Address(UUID.randomUUID(), "street", "city", "state", "12345", country);
 
         assertThat(address.getStreet()).isEqualTo("street");
