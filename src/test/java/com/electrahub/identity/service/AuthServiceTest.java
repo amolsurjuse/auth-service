@@ -11,8 +11,6 @@ import com.electrahub.identity.web.dto.AddressDto;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
@@ -109,7 +107,7 @@ class AuthServiceTest {
 
         User user = new User(UUID.randomUUID(), "user@example.com", "hash", true, OffsetDateTime.now());
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(authenticationManager.authenticate(any())).thenReturn(mock(Authentication.class));
+        when(passwordEncoder.matches("password", "hash")).thenReturn(true);
         when(tokenVersionService.getVersion(any())).thenReturn(1L);
         when(jwtService.generateAccessToken(any(), any(), anyLong(), any())).thenReturn("access");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -131,10 +129,7 @@ class AuthServiceTest {
         AuthService.TokenPair pair = service.login("User@Example.com", "password", "device");
 
         assertThat(pair.accessToken()).isEqualTo("access");
-        ArgumentCaptor<UsernamePasswordAuthenticationToken> captor = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
-        verify(authenticationManager).authenticate(captor.capture());
-        assertThat(captor.getValue().getPrincipal()).isEqualTo("user@example.com");
-        assertThat(captor.getValue().getCredentials()).isEqualTo("password");
+        verify(passwordEncoder).matches("password", "hash");
     }
 
     @Test

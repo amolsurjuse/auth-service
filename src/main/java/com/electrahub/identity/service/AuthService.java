@@ -8,7 +8,9 @@ import com.electrahub.identity.repository.RoleRepository;
 import com.electrahub.identity.repository.UserRepository;
 import com.electrahub.identity.web.dto.AddressDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class AuthService {
     private final TokenVersionService tokenVersionService;
 
     private final JwtService jwtService;
+    @SuppressWarnings("unused")
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
@@ -117,10 +120,16 @@ public class AuthService {
     @Transactional
     public TokenPair login(String email, String rawPassword, String deviceId) {
         String normalized = email.toLowerCase();
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(normalized, rawPassword));
-
         User user = userRepository.findByEmail(normalized)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (!user.isEnabled()) {
+            throw new DisabledException("User is disabled");
+        }
+
+        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
 
         return issueTokens(user, deviceId);
     }
