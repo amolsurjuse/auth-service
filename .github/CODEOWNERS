@@ -1,0 +1,11 @@
+# CODEOWNERS
+#
+# Each line is a file pattern followed by one or more owners.
+# Order is important: the last matching pattern takes precedence.
+#
+# Require a code owner review for every file in this repository.
+# Combined with branch protection rules that enforce "Require review from
+# Code Owners", this ensures no change lands on main without an explicit
+# approval from a listed owner.
+
+* @amolsurjuse
