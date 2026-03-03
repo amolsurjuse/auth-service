@@ -19,8 +19,8 @@ class RefreshTokenRepositoryTest {
     @Test
     void repositoryDeclaresCustomMethods() throws Exception {
         Method findByTokenHash = RefreshTokenRepository.class.getMethod("findByTokenHash", String.class);
-        Method deleteByUserId = RefreshTokenRepository.class.getMethod("deleteByUser_Id", UUID.class);
-        Method deleteByUserIdAndDeviceId = RefreshTokenRepository.class.getMethod("deleteByUser_IdAndDeviceId", UUID.class, String.class);
+        Method deleteByUserId = RefreshTokenRepository.class.getMethod("deleteByUserId", UUID.class);
+        Method deleteByUserIdAndDeviceId = RefreshTokenRepository.class.getMethod("deleteByUserIdAndDeviceId", UUID.class, String.class);
 
         assertThat(findByTokenHash.getReturnType()).isEqualTo(Optional.class);
         assertThat(deleteByUserId.getReturnType()).isEqualTo(void.class);

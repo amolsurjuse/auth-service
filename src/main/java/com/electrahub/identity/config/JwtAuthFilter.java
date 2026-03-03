@@ -2,11 +2,11 @@ package com.electrahub.identity.config;
 
 
 import com.electrahub.identity.service.*;
-import com.electrahub.identity.service.impl.UserDetailsServiceImpl;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -22,18 +22,15 @@ import java.util.UUID;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsServiceImpl userDetailsService;
     private final TokenDenylistService denylistService;
     private final TokenVersionService tokenVersionService;
 
     public JwtAuthFilter(
             JwtService jwtService,
-            UserDetailsServiceImpl userDetailsService,
             TokenDenylistService denylistService,
             TokenVersionService tokenVersionService
     ) {
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
         this.denylistService = denylistService;
         this.tokenVersionService = tokenVersionService;
     }
@@ -70,10 +67,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userDetails = userDetailsService.loadUserByUsername(parsed.subjectEmail());
+                var authorities = parsed.roles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .toList();
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(parsed.subjectEmail(), null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 

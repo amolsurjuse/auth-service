@@ -10,9 +10,8 @@ public class RefreshToken {
     @Id
     private UUID id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @Column(name = "device_id", nullable = false, length = 128)
     private String deviceId;
@@ -31,10 +30,10 @@ public class RefreshToken {
 
     protected RefreshToken() {}
 
-    public RefreshToken(UUID id, User user, String deviceId, String tokenHash,
+    public RefreshToken(UUID id, UUID userId, String deviceId, String tokenHash,
                         OffsetDateTime expiresAt, OffsetDateTime createdAt) {
         this.id = id;
-        this.user = user;
+        this.userId = userId;
         this.deviceId = deviceId;
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
@@ -43,7 +42,7 @@ public class RefreshToken {
     }
 
     public UUID getId() { return id; }
-    public User getUser() { return user; }
+    public UUID getUserId() { return userId; }
     public String getDeviceId() { return deviceId; }
     public String getTokenHash() { return tokenHash; }
     public OffsetDateTime getExpiresAt() { return expiresAt; }
@@ -55,4 +54,3 @@ public class RefreshToken {
         return expiresAt.isBefore(OffsetDateTime.now());
     }
 }
-

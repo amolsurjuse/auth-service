@@ -1,194 +1,165 @@
 package com.electrahub.identity.service;
 
-import com.electrahub.identity.domain.Country;
 import com.electrahub.identity.domain.RefreshToken;
-import com.electrahub.identity.domain.Role;
-import com.electrahub.identity.domain.User;
+import com.electrahub.identity.integration.UserServiceClient;
 import com.electrahub.identity.repository.RefreshTokenRepository;
-import com.electrahub.identity.repository.RoleRepository;
-import com.electrahub.identity.repository.UserRepository;
 import com.electrahub.identity.web.dto.AddressDto;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AuthServiceTest {
 
     @Test
-    void registerThrowsWhenEmailExists() {
-        UserRepository userRepository = mock(UserRepository.class);
-        when(userRepository.existsByEmail("user@example.com")).thenReturn(true);
+    void registerMapsDuplicateEmailConflictToValidationError() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        when(userServiceClient.register(any()))
+                .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));
 
-        AuthService service = buildService(userRepository);
+        AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
 
-        assertThatThrownBy(() -> service.register("user@example.com", "password", "device"))
+        assertThatThrownBy(() ->
+                service.register("user@example.com", "password", "device", "First", "Last", "+123", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Email already registered");
     }
 
     @Test
-    void registerSavesUserAndIssuesTokens() {
-        UserRepository userRepository = mock(UserRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
+    void loginMapsUnauthorizedToBadCredentials() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        when(userServiceClient.authenticate(any()))
+                .thenThrow(new RestClientResponseException("unauthorized", 401, "Unauthorized", null, null, null));
+
+        AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
+
+        assertThatThrownBy(() -> service.login("user@example.com", "wrong", "device"))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessageContaining("Invalid credentials");
+    }
+
+    @Test
+    void loginThrowsWhenUserIsDisabled() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        when(userServiceClient.authenticate(any()))
+                .thenReturn(new UserServiceClient.UserPrincipal(
+                        UUID.randomUUID(), "user@example.com", false, List.of("USER")));
+
+        AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
+
+        assertThatThrownBy(() -> service.login("user@example.com", "password", "device"))
+                .isInstanceOf(DisabledException.class)
+                .hasMessageContaining("User is disabled");
+    }
+
+    @Test
+    void registerPersistsRefreshTokenAndCachesSession() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
         RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
-        com.electrahub.identity.repository.AddressRepository addressRepository = mock(com.electrahub.identity.repository.AddressRepository.class);
-        com.electrahub.identity.repository.CountryRepository countryRepository = mock(com.electrahub.identity.repository.CountryRepository.class);
         RedisRefreshSessionStore refreshStore = mock(RedisRefreshSessionStore.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
         JwtService jwtService = mock(JwtService.class);
-        AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
-        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 
-        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
-        Role role = new Role(UUID.randomUUID(), "USER");
-        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role));
-        when(passwordEncoder.encode("password")).thenReturn("hash");
-        when(tokenVersionService.getVersion(any())).thenReturn(1L);
-        when(jwtService.generateAccessToken(any(), any(), anyLong(), any())).thenReturn("access");
+        UUID userId = UUID.randomUUID();
+        when(userServiceClient.register(any()))
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, List.of("USER")));
+        when(tokenVersionService.getVersion(userId)).thenReturn(1L);
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService service = new AuthService(
-                userRepository,
-                roleRepository,
+                userServiceClient,
                 refreshTokenRepository,
-                addressRepository,
-                countryRepository,
                 refreshStore,
                 tokenVersionService,
                 jwtService,
-                authenticationManager,
-                passwordEncoder,
                 7
         );
 
-        AddressDto addressDto = new AddressDto("street", "city", "state", "12345", "US");
-        Country country = new Country(UUID.randomUUID(), "US", "United States", "+1", true);
-        when(countryRepository.findByIsoCodeAndEnabledTrue("US")).thenReturn(Optional.of(country));
+        AddressDto address = new AddressDto("street", "city", "state", "12345", "US");
+        AuthService.TokenPair pair = service.register(
+                "User@Example.com", "password", "device-1", "First", "Last", "+1234567890", address);
 
-        AuthService.TokenPair pair = service.register("User@Example.com", "password", "device", "First", "Last", "+12345678901", addressDto);
-
-        assertThat(pair.accessToken()).isEqualTo("access");
+        assertThat(pair.accessToken()).isEqualTo("access-token");
         assertThat(pair.refreshToken()).isNotBlank();
 
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getEmail()).isEqualTo("user@example.com");
+        ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(refreshTokenRepository).save(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(userId);
+        assertThat(captor.getValue().getDeviceId()).isEqualTo("device-1");
+        assertThat(captor.getValue().getTokenHash()).isEqualTo(sha256Hex(pair.refreshToken()));
 
-        ArgumentCaptor<RefreshToken> rtCaptor = ArgumentCaptor.forClass(RefreshToken.class);
-        verify(refreshTokenRepository).save(rtCaptor.capture());
-
-        String expectedHash = sha256Hex(pair.refreshToken());
-        assertThat(rtCaptor.getValue().getTokenHash()).isEqualTo(expectedHash);
-        verify(refreshStore).put(eq(expectedHash), any(), any());
+        verify(refreshStore).put(eq(sha256Hex(pair.refreshToken())), any(), any());
     }
 
     @Test
-    void loginAuthenticatesAndIssuesTokens() {
-        UserRepository userRepository = mock(UserRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
+    void refreshRotatesTokenAndDeletesOldFromCache() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
         RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
         RedisRefreshSessionStore refreshStore = mock(RedisRefreshSessionStore.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
         JwtService jwtService = mock(JwtService.class);
-        AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
-        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 
-        User user = new User(UUID.randomUUID(), "user@example.com", "hash", true, OffsetDateTime.now());
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password", "hash")).thenReturn(true);
-        when(tokenVersionService.getVersion(any())).thenReturn(1L);
-        when(jwtService.generateAccessToken(any(), any(), anyLong(), any())).thenReturn("access");
-        when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        AuthService service = new AuthService(
-                userRepository,
-                roleRepository,
-                refreshTokenRepository,
-                mock(com.electrahub.identity.repository.AddressRepository.class),
-                mock(com.electrahub.identity.repository.CountryRepository.class),
-                refreshStore,
-                tokenVersionService,
-                jwtService,
-                authenticationManager,
-                passwordEncoder,
-                7
-        );
-
-        AuthService.TokenPair pair = service.login("User@Example.com", "password", "device");
-
-        assertThat(pair.accessToken()).isEqualTo("access");
-        verify(passwordEncoder).matches("password", "hash");
-    }
-
-    @Test
-    void refreshValidatesAndRotates() {
-        UserRepository userRepository = mock(UserRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
-        RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
-        RedisRefreshSessionStore refreshStore = mock(RedisRefreshSessionStore.class);
-        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
-        JwtService jwtService = mock(JwtService.class);
-        AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
-        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-
-        User user = new User(UUID.randomUUID(), "user@example.com", "hash", true, OffsetDateTime.now());
+        UUID userId = UUID.randomUUID();
         String refreshPlain = "plain-refresh";
-        String refreshHash = sha256Hex(refreshPlain);
+        String hash = sha256Hex(refreshPlain);
 
-        RefreshToken db = new RefreshToken(UUID.randomUUID(), user, "device", refreshHash,
-                OffsetDateTime.now().plusDays(1), OffsetDateTime.now());
-        when(refreshTokenRepository.findByTokenHash(refreshHash)).thenReturn(Optional.of(db));
-        when(refreshStore.getIfPresent(refreshHash)).thenReturn(
-                new RedisRefreshSessionStore.RefreshSessionView(user.getId(), "device", db.getId(), db.getExpiresAt())
+        RefreshToken current = new RefreshToken(
+                UUID.randomUUID(),
+                userId,
+                "device-1",
+                hash,
+                OffsetDateTime.now().plusDays(1),
+                OffsetDateTime.now()
         );
-        when(tokenVersionService.getVersion(any())).thenReturn(1L);
-        when(jwtService.generateAccessToken(any(), any(), anyLong(), any())).thenReturn("access");
+
+        when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(current));
+        when(refreshStore.getIfPresent(hash))
+                .thenReturn(new RedisRefreshSessionStore.RefreshSessionView(
+                        userId, "device-1", current.getId(), current.getExpiresAt()));
+        when(userServiceClient.getPrincipal(userId))
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, List.of("USER")));
+        when(tokenVersionService.getVersion(userId)).thenReturn(2L);
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService service = new AuthService(
-                userRepository,
-                roleRepository,
+                userServiceClient,
                 refreshTokenRepository,
-                mock(com.electrahub.identity.repository.AddressRepository.class),
-                mock(com.electrahub.identity.repository.CountryRepository.class),
                 refreshStore,
                 tokenVersionService,
                 jwtService,
-                authenticationManager,
-                passwordEncoder,
                 7
         );
 
-        AuthService.TokenPair pair = service.refresh(refreshPlain, "device");
+        AuthService.TokenPair rotated = service.refresh(refreshPlain, "device-1");
 
-        assertThat(pair.accessToken()).isEqualTo("access");
-        verify(refreshStore).delete(refreshHash, user.getId(), "device");
+        assertThat(rotated.accessToken()).isEqualTo("access-token");
+        verify(refreshStore).delete(hash, userId, "device-1");
+        assertThat(current.isRevoked()).isTrue();
     }
 
-    private AuthService buildService(UserRepository userRepository) {
+    private AuthService buildService(UserServiceClient userServiceClient, RefreshTokenRepository refreshTokenRepository) {
         return new AuthService(
-                userRepository,
-                mock(RoleRepository.class),
-                mock(RefreshTokenRepository.class),
-                mock(com.electrahub.identity.repository.AddressRepository.class),
-                mock(com.electrahub.identity.repository.CountryRepository.class),
+                userServiceClient,
+                refreshTokenRepository,
                 mock(RedisRefreshSessionStore.class),
                 mock(TokenVersionService.class),
                 mock(JwtService.class),
-                mock(AuthenticationManager.class),
-                mock(PasswordEncoder.class),
                 7
         );
     }

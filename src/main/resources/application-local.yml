@@ -34,3 +34,7 @@ logging:
     root: INFO
     com.electrahub.identity: DEBUG
     liquibase: INFO
+
+app:
+  user-service:
+    base-url: ${LOCAL_APP_USER_SERVICE_BASE_URL:http://127.0.0.1:8082}

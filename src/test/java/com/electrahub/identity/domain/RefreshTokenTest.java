@@ -11,8 +11,8 @@ class RefreshTokenTest {
 
     @Test
     void revokeSetsFlag() {
-        User user = new User(UUID.randomUUID(), "a@b.com", "hash", true, OffsetDateTime.now());
-        RefreshToken token = new RefreshToken(UUID.randomUUID(), user, "device", "hash", OffsetDateTime.now().plusDays(1), OffsetDateTime.now());
+        UUID userId = UUID.randomUUID();
+        RefreshToken token = new RefreshToken(UUID.randomUUID(), userId, "device", "hash", OffsetDateTime.now().plusDays(1), OffsetDateTime.now());
 
         token.revoke();
 
@@ -21,9 +21,9 @@ class RefreshTokenTest {
 
     @Test
     void isExpiredNowReflectsExpiry() {
-        User user = new User(UUID.randomUUID(), "a@b.com", "hash", true, OffsetDateTime.now());
-        RefreshToken expired = new RefreshToken(UUID.randomUUID(), user, "device", "hash", OffsetDateTime.now().minusMinutes(1), OffsetDateTime.now());
-        RefreshToken valid = new RefreshToken(UUID.randomUUID(), user, "device", "hash", OffsetDateTime.now().plusMinutes(10), OffsetDateTime.now());
+        UUID userId = UUID.randomUUID();
+        RefreshToken expired = new RefreshToken(UUID.randomUUID(), userId, "device", "hash", OffsetDateTime.now().minusMinutes(1), OffsetDateTime.now());
+        RefreshToken valid = new RefreshToken(UUID.randomUUID(), userId, "device", "hash", OffsetDateTime.now().plusMinutes(10), OffsetDateTime.now());
 
         assertThat(expired.isExpiredNow()).isTrue();
         assertThat(valid.isExpiredNow()).isFalse();

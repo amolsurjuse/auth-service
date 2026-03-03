@@ -1,38 +1,29 @@
 package com.electrahub.identity.config;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 class SecurityConfigTest {
 
     @Test
-    void authenticationProviderAndEncoderPresent() {
-        SecurityConfig config = new SecurityConfig();
-        PasswordEncoder passwordEncoder = config.passwordEncoder();
-        AuthenticationProvider authenticationProvider = config.authenticationProvider(
-                username -> null,
-                passwordEncoder
-        );
+    void corsConfigurationSourceUsesConfiguredOriginPatterns() {
+        CorsProperties corsProperties = new CorsProperties();
+        corsProperties.setAllowedOriginPatterns(List.of("http://localhost:4200", "https://*.electrahub.com"));
+        SecurityConfig config = new SecurityConfig(corsProperties);
 
-        assertThat(authenticationProvider).isInstanceOf(DaoAuthenticationProvider.class);
-        assertThat(passwordEncoder).isNotNull();
-        assertThat(passwordEncoder.encode("pw")).isNotBlank();
-    }
-
-    @Test
-    void authenticationManagerDelegatesToConfiguration() throws Exception {
-        SecurityConfig config = new SecurityConfig();
-        AuthenticationConfiguration configuration = mock(AuthenticationConfiguration.class);
-        AuthenticationManager manager = mock(AuthenticationManager.class);
-        when(configuration.getAuthenticationManager()).thenReturn(manager);
-
-        assertThat(config.authenticationManager(configuration)).isSameAs(manager);
+        CorsConfigurationSource source = config.corsConfigurationSource();
+        assertThat(source).isInstanceOf(UrlBasedCorsConfigurationSource.class);
+        UrlBasedCorsConfigurationSource typed = (UrlBasedCorsConfigurationSource) source;
+        var cors = typed.getCorsConfigurations().get("/**");
+        assertThat(cors).isNotNull();
+        assertThat(cors.getAllowedOriginPatterns())
+                .containsExactly("http://localhost:4200", "https://*.electrahub.com");
+        assertThat(cors.getAllowedMethods()).contains("GET", "POST", "OPTIONS");
+        assertThat(cors.getAllowCredentials()).isTrue();
     }
 }

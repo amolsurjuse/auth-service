@@ -3,20 +3,16 @@ package com.electrahub.identity.config;
 import com.electrahub.identity.service.JwtService;
 import com.electrahub.identity.service.TokenDenylistService;
 import com.electrahub.identity.service.TokenVersionService;
-import com.electrahub.identity.service.impl.UserDetailsServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,11 +28,10 @@ class JwtAuthFilterTest {
     @Test
     void noAuthorizationHeaderSkipsAuthentication() throws Exception {
         JwtService jwtService = mock(JwtService.class);
-        UserDetailsServiceImpl uds = mock(UserDetailsServiceImpl.class);
         TokenDenylistService denylist = mock(TokenDenylistService.class);
         TokenVersionService versions = mock(TokenVersionService.class);
 
-        JwtAuthFilter filter = new JwtAuthFilter(jwtService, uds, denylist, versions);
+        JwtAuthFilter filter = new JwtAuthFilter(jwtService, denylist, versions);
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();
@@ -44,14 +39,13 @@ class JwtAuthFilterTest {
 
         filter.doFilterInternal(req, res, chain);
 
-        verifyNoInteractions(jwtService, uds, denylist, versions);
+        verifyNoInteractions(jwtService, denylist, versions);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
     @Test
     void validTokenAuthenticatesAndSetsAttributes() throws Exception {
         JwtService jwtService = mock(JwtService.class);
-        UserDetailsServiceImpl uds = mock(UserDetailsServiceImpl.class);
         TokenDenylistService denylist = mock(TokenDenylistService.class);
         TokenVersionService versions = mock(TokenVersionService.class);
 
@@ -62,16 +56,13 @@ class JwtAuthFilterTest {
         long tv = 2L;
         Date exp = Date.from(Instant.now().plusSeconds(60));
 
-        when(jwtService.parseAndValidate(token)).thenReturn(new JwtService.ParsedToken(email, jti, uid, tv, exp));
+        when(jwtService.parseAndValidate(token))
+                .thenReturn(new JwtService.ParsedToken(email, jti, uid, tv, exp, java.util.List.of("USER")));
         when(jwtService.isNotExpired(exp)).thenReturn(true);
         when(denylist.isDenied(jti)).thenReturn(false);
         when(versions.getVersion(UUID.fromString(uid))).thenReturn(tv);
 
-        when(uds.loadUserByUsername(email)).thenReturn(
-                User.withUsername(email).password("x").authorities(List.of()).build()
-        );
-
-        JwtAuthFilter filter = new JwtAuthFilter(jwtService, uds, denylist, versions);
+        JwtAuthFilter filter = new JwtAuthFilter(jwtService, denylist, versions);
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         req.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
@@ -81,6 +72,9 @@ class JwtAuthFilterTest {
         filter.doFilterInternal(req, res, chain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_USER");
         assertThat(req.getAttribute("uid")).isEqualTo(uid);
         assertThat(req.getAttribute("jti")).isEqualTo(jti);
         assertThat(req.getAttribute("exp")).isEqualTo(exp);

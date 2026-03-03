@@ -1,19 +1,15 @@
 package com.electrahub.identity.service;
 
-import com.electrahub.identity.domain.*;
-import com.electrahub.identity.repository.AddressRepository;
-import com.electrahub.identity.repository.CountryRepository;
+import com.electrahub.identity.domain.RefreshToken;
+import com.electrahub.identity.integration.UserServiceClient;
 import com.electrahub.identity.repository.RefreshTokenRepository;
-import com.electrahub.identity.repository.RoleRepository;
-import com.electrahub.identity.repository.UserRepository;
 import com.electrahub.identity.web.dto.AddressDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -24,45 +20,29 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final UserServiceClient userServiceClient;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final AddressRepository addressRepository;
-    private final CountryRepository countryRepository;
 
     private final RedisRefreshSessionStore refreshStore;
     private final TokenVersionService tokenVersionService;
 
     private final JwtService jwtService;
-    @SuppressWarnings("unused")
-    private final AuthenticationManager authenticationManager;
-    private final PasswordEncoder passwordEncoder;
 
     private final long refreshTtlDays;
 
     public AuthService(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
+            UserServiceClient userServiceClient,
             RefreshTokenRepository refreshTokenRepository,
-            AddressRepository addressRepository,
-            CountryRepository countryRepository,
             RedisRefreshSessionStore refreshStore,
             TokenVersionService tokenVersionService,
             JwtService jwtService,
-            AuthenticationManager authenticationManager,
-            PasswordEncoder passwordEncoder,
             @Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.userServiceClient = userServiceClient;
         this.refreshTokenRepository = refreshTokenRepository;
-        this.addressRepository = addressRepository;
-        this.countryRepository = countryRepository;
         this.refreshStore = refreshStore;
         this.tokenVersionService = tokenVersionService;
         this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
-        this.passwordEncoder = passwordEncoder;
         this.refreshTtlDays = refreshTtlDays;
     }
 
@@ -70,68 +50,59 @@ public class AuthService {
 
     @Transactional
     public TokenPair register(String email, String rawPassword, String deviceId) {
-        String normalized = email.toLowerCase();
-        if (userRepository.existsByEmail(normalized)) {
-            throw new IllegalArgumentException("Email already registered");
+        try {
+            var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
+                    email,
+                    rawPassword,
+                    null,
+                    null,
+                    null,
+                    null
+            ));
+            return issueTokens(principal, deviceId);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 409) {
+                throw new IllegalArgumentException("Email already registered");
+            }
+            throw ex;
         }
-
-        OffsetDateTime now = OffsetDateTime.now();
-        User user = new User(UUID.randomUUID(), normalized, passwordEncoder.encode(rawPassword), true, now);
-
-        // Assign default USER role (seeded by Liquibase)
-        var userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new IllegalStateException("ROLE USER not seeded"));
-        user.addRole(userRole);
-
-        userRepository.save(user);
-        return issueTokens(user, deviceId);
     }
 
     @Transactional
     public TokenPair register(String email, String rawPassword, String deviceId,
                               String firstName, String lastName, String phoneNumber, AddressDto addressDto) {
-        String normalized = email.toLowerCase();
-        if (userRepository.existsByEmail(normalized)) {
-            throw new IllegalArgumentException("Email already registered");
-        }
-
-        OffsetDateTime now = OffsetDateTime.now();
-        User user = new User(UUID.randomUUID(), normalized, passwordEncoder.encode(rawPassword), true, now);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setPhoneNumber(phoneNumber);
-
-        if (addressDto != null) {
-            Address address = buildAddress(addressDto);
-            if (address != null) {
-                addressRepository.save(address);
-                user.setAddress(address);
+        try {
+            var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
+                    email,
+                    rawPassword,
+                    firstName,
+                    lastName,
+                    phoneNumber,
+                    addressDto
+            ));
+            return issueTokens(principal, deviceId);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 409) {
+                throw new IllegalArgumentException("Email already registered");
             }
+            throw ex;
         }
-
-        var userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new IllegalStateException("ROLE USER not seeded"));
-        user.addRole(userRole);
-
-        userRepository.save(user);
-        return issueTokens(user, deviceId);
     }
 
     @Transactional
     public TokenPair login(String email, String rawPassword, String deviceId) {
-        String normalized = email.toLowerCase();
-        User user = userRepository.findByEmail(normalized)
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-
-        if (!user.isEnabled()) {
-            throw new DisabledException("User is disabled");
+        try {
+            var principal = userServiceClient.authenticate(new UserServiceClient.AuthenticateUserRequest(email, rawPassword));
+            if (!principal.enabled()) {
+                throw new DisabledException("User is disabled");
+            }
+            return issueTokens(principal, deviceId);
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 401) {
+                throw new BadCredentialsException("Invalid credentials");
+            }
+            throw ex;
         }
-
-        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new BadCredentialsException("Invalid credentials");
-        }
-
-        return issueTokens(user, deviceId);
     }
 
     @Transactional
@@ -146,7 +117,7 @@ public class AuthService {
 
         if (db.isRevoked() || db.isExpiredNow()) {
             // cleanup best-effort
-            refreshStore.delete(hash, db.getUser().getId(), db.getDeviceId());
+            refreshStore.delete(hash, db.getUserId(), db.getDeviceId());
             throw new IllegalArgumentException("Refresh token expired or revoked");
         }
 
@@ -161,9 +132,13 @@ public class AuthService {
 
         // Rotate: revoke old
         db.revoke();
-        refreshStore.delete(hash, db.getUser().getId(), deviceId);
+        refreshStore.delete(hash, db.getUserId(), deviceId);
 
-        return issueTokens(db.getUser(), deviceId);
+        var principal = userServiceClient.getPrincipal(db.getUserId());
+        if (!principal.enabled()) {
+            throw new DisabledException("User is disabled");
+        }
+        return issueTokens(principal, deviceId);
     }
 
     @Transactional
@@ -171,20 +146,18 @@ public class AuthService {
         // Immediate enforcement in Redis
         refreshStore.revokeAllForUserDevice(userId, deviceId);
         // Durable cleanup
-        refreshTokenRepository.deleteByUser_IdAndDeviceId(userId, deviceId);
+        refreshTokenRepository.deleteByUserIdAndDeviceId(userId, deviceId);
     }
 
     @Transactional
     public void revokeAllRefreshForUser(UUID userId) {
         refreshStore.revokeAllForUser(userId);
-        refreshTokenRepository.deleteByUser_Id(userId);
+        refreshTokenRepository.deleteByUserId(userId);
     }
 
-    private TokenPair issueTokens(User user, String deviceId) {
-        long tv = tokenVersionService.getVersion(user.getId());
-        var roles = user.getRoles().stream().map(r -> r.getName()).toList();
-
-        String access = jwtService.generateAccessToken(user.getEmail(), user.getId().toString(), tv, roles);
+    private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId) {
+        long tv = tokenVersionService.getVersion(principal.userId());
+        String access = jwtService.generateAccessToken(principal.email(), principal.userId().toString(), tv, principal.roles());
 
         String refreshPlain = UUID.randomUUID() + "." + UUID.randomUUID();
         String refreshHash = sha256Hex(refreshPlain);
@@ -193,12 +166,12 @@ public class AuthService {
         OffsetDateTime exp = now.plusDays(refreshTtlDays);
         Duration ttl = Duration.ofDays(refreshTtlDays);
 
-        RefreshToken rt = new RefreshToken(UUID.randomUUID(), user, deviceId, refreshHash, exp, now);
+        RefreshToken rt = new RefreshToken(UUID.randomUUID(), principal.userId(), deviceId, refreshHash, exp, now);
         refreshTokenRepository.save(rt);
 
         refreshStore.put(
                 refreshHash,
-                new RedisRefreshSessionStore.RefreshSessionView(user.getId(), deviceId, rt.getId(), exp),
+                new RedisRefreshSessionStore.RefreshSessionView(principal.userId(), deviceId, rt.getId(), exp),
                 ttl
         );
 
@@ -215,22 +188,4 @@ public class AuthService {
         }
     }
 
-    private Address buildAddress(AddressDto dto) {
-        if (dto == null) return null;
-
-        Country country = null;
-        if (dto.countryIsoCode() != null && !dto.countryIsoCode().isBlank()) {
-            country = countryRepository.findByIsoCodeAndEnabledTrue(dto.countryIsoCode().toUpperCase())
-                    .orElseThrow(() -> new IllegalArgumentException("Country not available"));
-        }
-
-        return new Address(
-                UUID.randomUUID(),
-                dto.street(),
-                dto.city(),
-                dto.state(),
-                dto.postalCode(),
-                country
-        );
-    }
 }
