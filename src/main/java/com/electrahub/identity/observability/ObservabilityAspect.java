@@ -32,8 +32,7 @@ public class ObservabilityAspect {
             "(within(@org.springframework.web.bind.annotation.RestController *) || " +
             "within(@org.springframework.stereotype.Controller *) || " +
             "within(@org.springframework.stereotype.Service *) || " +
-            "within(@org.springframework.stereotype.Repository *) || " +
-            "within(@org.springframework.stereotype.Component *)) && " +
+            "within(@org.springframework.stereotype.Repository *)) && " +
             "!within(com.electrahub..observability..*)")
     public Object observe(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
