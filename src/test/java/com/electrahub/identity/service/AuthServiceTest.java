@@ -1,5 +1,7 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.domain.RefreshToken;
 import com.electrahub.identity.integration.UserServiceClient;
 import com.electrahub.identity.repository.RefreshTokenRepository;
@@ -24,9 +26,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AuthServiceTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthServiceTest.class);
 
+
+    /**
+     * Creates register maps duplicate email conflict to validation error for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void registerMapsDuplicateEmailConflictToValidationError() {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError with debug context");
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         when(userServiceClient.register(any()))
                 .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));
@@ -39,6 +51,12 @@ class AuthServiceTest {
                 .hasMessageContaining("Email already registered");
     }
 
+    /**
+     * Executes login maps unauthorized to bad credentials for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void loginMapsUnauthorizedToBadCredentials() {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
@@ -52,6 +70,12 @@ class AuthServiceTest {
                 .hasMessageContaining("Invalid credentials");
     }
 
+    /**
+     * Executes login throws when user is disabled for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void loginThrowsWhenUserIsDisabled() {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
@@ -66,6 +90,12 @@ class AuthServiceTest {
                 .hasMessageContaining("User is disabled");
     }
 
+    /**
+     * Creates register persists refresh token and caches session for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void registerPersistsRefreshTokenAndCachesSession() {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
@@ -106,6 +136,12 @@ class AuthServiceTest {
         verify(refreshStore).put(eq(sha256Hex(pair.refreshToken())), any(), any());
     }
 
+    /**
+     * Updates refresh rotates token and deletes old from cache for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void refreshRotatesTokenAndDeletesOldFromCache() {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
@@ -153,6 +189,15 @@ class AuthServiceTest {
         assertThat(current.isRevoked()).isTrue();
     }
 
+    /**
+     * Creates build service for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param userServiceClient input consumed by buildService.
+     * @param refreshTokenRepository input consumed by buildService.
+     * @return result produced by buildService.
+     */
     private AuthService buildService(UserServiceClient userServiceClient, RefreshTokenRepository refreshTokenRepository) {
         return new AuthService(
                 userServiceClient,
@@ -164,6 +209,14 @@ class AuthServiceTest {
         );
     }
 
+    /**
+     * Executes sha256 hex for `AuthServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param value input consumed by sha256Hex.
+     * @return result produced by sha256Hex.
+     */
     private static String sha256Hex(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

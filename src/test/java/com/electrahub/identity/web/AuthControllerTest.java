@@ -1,5 +1,7 @@
 package com.electrahub.identity.web;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.service.AuthService;
 import com.electrahub.identity.service.TokenDenylistService;
 import com.electrahub.identity.service.TokenVersionService;
@@ -22,9 +24,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class AuthControllerTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthControllerTest.class);
 
+
+    /**
+     * Creates register sets cookies and returns access token for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void registerSetsCookiesAndReturnsAccessToken() {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken with debug context");
         AuthService authService = mock(AuthService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
@@ -46,6 +58,12 @@ class AuthControllerTest {
         assertThat(response.getBody().accessToken()).isEqualTo("access");
     }
 
+    /**
+     * Executes login sets cookies and returns access token for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void loginSetsCookiesAndReturnsAccessToken() {
         AuthService authService = mock(AuthService.class);
@@ -67,6 +85,12 @@ class AuthControllerTest {
         assertThat(response.getBody().tokenType()).isEqualTo("Bearer");
     }
 
+    /**
+     * Updates refresh without cookies returns unauthorized for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void refreshWithoutCookiesReturnsUnauthorized() {
         AuthService authService = mock(AuthService.class);
@@ -81,6 +105,12 @@ class AuthControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    /**
+     * Executes logout device revokes and clears cookie for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void logoutDeviceRevokesAndClearsCookie() {
         AuthService authService = mock(AuthService.class);
@@ -105,6 +135,12 @@ class AuthControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    /**
+     * Executes logout all revokes all and bumps version for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void logoutAllRevokesAllAndBumpsVersion() {
         AuthService authService = mock(AuthService.class);

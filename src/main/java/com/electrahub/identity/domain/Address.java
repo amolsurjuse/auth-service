@@ -1,5 +1,7 @@
 package com.electrahub.identity.domain;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -7,6 +9,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "address")
 public class Address {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Address.class);
+
     @Id
     private UUID id;
 
@@ -28,7 +32,21 @@ public class Address {
 
     protected Address() {}
 
+    /**
+     * Creates address for `Address`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.domain`.
+     * @param id input consumed by Address.
+     * @param street input consumed by Address.
+     * @param city input consumed by Address.
+     * @param state input consumed by Address.
+     * @param postalCode input consumed by Address.
+     * @param country input consumed by Address.
+     */
     public Address(UUID id, String street, String city, String state, String postalCode, Country country) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering Address#Address");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering Address#Address with debug context");
         this.id = id;
         this.street = street;
         this.city = city;

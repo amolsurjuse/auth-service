@@ -1,5 +1,7 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,8 @@ import java.util.*;
 
 @Service
 public class JwtService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtService.class);
+
 
     private final Key signingKey;
     private final String issuer;
@@ -30,7 +34,20 @@ public class JwtService {
 
     public record ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp, List<String> roles) {}
 
+    /**
+     * Executes generate access token for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param subjectEmail input consumed by generateAccessToken.
+     * @param uid input consumed by generateAccessToken.
+     * @param tokenVersion input consumed by generateAccessToken.
+     * @param roles input consumed by generateAccessToken.
+     * @return result produced by generateAccessToken.
+     */
     public String generateAccessToken(String subjectEmail, String uid, long tokenVersion, List<String> roles) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken with debug context");
         Instant now = Instant.now();
         Instant exp = now.plus(accessTtlMinutes, ChronoUnit.MINUTES);
 
@@ -47,6 +64,14 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Executes parse and validate for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param token input consumed by parseAndValidate.
+     * @return result produced by parseAndValidate.
+     */
     public ParsedToken parseAndValidate(String token) {
         Jws<Claims> jws = Jwts.parser()
                 .verifyWith((javax.crypto.SecretKey) signingKey)
@@ -80,6 +105,14 @@ public class JwtService {
         );
     }
 
+    /**
+     * Executes is not expired for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param exp input consumed by isNotExpired.
+     * @return result produced by isNotExpired.
+     */
     public boolean isNotExpired(Date exp) {
         return exp != null && exp.after(new Date());
     }

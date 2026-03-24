@@ -1,5 +1,7 @@
 package com.electrahub.identity.domain;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -7,6 +9,8 @@ import java.util.*;
 @Entity
 @Table(name = "users")
 public class User {
+    private static final Logger LOGGER = LoggerFactory.getLogger(User.class);
+
     @Id
     private UUID id;
 
@@ -48,7 +52,20 @@ public class User {
 
     protected User() {}
 
+    /**
+     * Executes user for `User`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.domain`.
+     * @param id input consumed by User.
+     * @param email input consumed by User.
+     * @param passwordHash input consumed by User.
+     * @param enabled input consumed by User.
+     * @param now input consumed by User.
+     */
     public User(UUID id, String email, String passwordHash, boolean enabled, OffsetDateTime now) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering User#User");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering User#User with debug context");
         this.id = id;
         this.email = email.toLowerCase();
         this.passwordHash = passwordHash;

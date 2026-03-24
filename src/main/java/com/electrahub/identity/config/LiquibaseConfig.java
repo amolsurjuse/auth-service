@@ -1,5 +1,7 @@
 package com.electrahub.identity.config;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import javax.sql.DataSource;
 
 import liquibase.integration.spring.SpringLiquibase;
@@ -10,10 +12,23 @@ import org.springframework.core.env.Environment;
 
 @Configuration
 public class LiquibaseConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LiquibaseConfig.class);
 
+
+    /**
+     * Executes liquibase for `LiquibaseConfig`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @param dataSource input consumed by liquibase.
+     * @param environment input consumed by liquibase.
+     * @return result produced by liquibase.
+     */
     @Bean
     @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
     SpringLiquibase liquibase(DataSource dataSource, Environment environment) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering LiquibaseConfig#liquibase");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering LiquibaseConfig#liquibase with debug context");
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog(environment.getProperty(

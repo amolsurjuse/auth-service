@@ -1,5 +1,7 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -16,9 +18,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class RedisRefreshSessionStoreTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisRefreshSessionStoreTest.class);
 
+
+    /**
+     * Executes put writes session and indexes for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void putWritesSessionAndIndexes() throws Exception {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes with debug context");
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
         ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);
@@ -42,6 +54,12 @@ class RedisRefreshSessionStoreTest {
         verify(redis).expire("rtd:" + view.userId() + ":" + view.deviceId(), Duration.ofHours(7));
     }
 
+    /**
+     * Retrieves get if present reads and parses for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentReadsAndParses() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
@@ -61,6 +79,12 @@ class RedisRefreshSessionStoreTest {
         assertThat(store.getIfPresent("hash")).isEqualTo(view);
     }
 
+    /**
+     * Retrieves get if present returns null when missing for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentReturnsNullWhenMissing() {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
@@ -75,6 +99,12 @@ class RedisRefreshSessionStoreTest {
         assertThat(store.getIfPresent("hash")).isNull();
     }
 
+    /**
+     * Retrieves get if present wraps exceptions for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentWrapsExceptions() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
@@ -92,6 +122,12 @@ class RedisRefreshSessionStoreTest {
                 .hasMessageContaining("Redis refresh session read failed");
     }
 
+    /**
+     * Executes put wraps exceptions for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void putWrapsExceptions() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
@@ -109,6 +145,12 @@ class RedisRefreshSessionStoreTest {
                 .hasMessageContaining("Redis refresh session write failed");
     }
 
+    /**
+     * Removes delete and revoke methods clean keys for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void deleteAndRevokeMethodsCleanKeys() {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);

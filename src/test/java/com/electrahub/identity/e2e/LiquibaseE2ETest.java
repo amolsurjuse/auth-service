@@ -1,5 +1,7 @@
 package com.electrahub.identity.e2e;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.integration.UserServiceClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,8 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class LiquibaseE2ETest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LiquibaseE2ETest.class);
+
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -42,7 +46,15 @@ class LiquibaseE2ETest {
     }
 
     /*@Test
+    /**
+     * Executes liquibase creates tables and seeds countries for `LiquibaseE2ETest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.e2e`.
+     */
     void liquibaseCreatesTablesAndSeedsCountries() {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering LiquibaseE2ETest#liquibaseCreatesTablesAndSeedsCountries");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering LiquibaseE2ETest#liquibaseCreatesTablesAndSeedsCountries with debug context");
         Integer changelogTableCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.tables where table_name = 'DATABASECHANGELOG' and table_schema = 'PUBLIC'",
                 Integer.class

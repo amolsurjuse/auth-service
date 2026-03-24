@@ -1,5 +1,7 @@
 package com.electrahub.identity.exception;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.web.dto.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
@@ -16,9 +18,19 @@ import java.lang.reflect.Method;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalExceptionHandlerTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandlerTest.class);
 
+
+    /**
+     * Processes handle validation uses first error message for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleValidationUsesFirstErrorMessage() throws Exception {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage with debug context");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
         LoginRequest reqObj = new LoginRequest("bad", "");
@@ -40,6 +52,12 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().path()).isEqualTo("/api/auth/login");
     }
 
+    /**
+     * Processes handle bad request builds error for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleBadRequestBuildsError() {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
@@ -54,6 +72,12 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().path()).isEqualTo("/api/auth/register");
     }
 
+    /**
+     * Processes handle generic uses unexpected message for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleGenericUsesUnexpectedMessage() {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();

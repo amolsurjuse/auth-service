@@ -1,5 +1,7 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.domain.RefreshToken;
 import com.electrahub.identity.integration.UserServiceClient;
 import com.electrahub.identity.repository.RefreshTokenRepository;
@@ -19,6 +21,8 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthService.class);
+
 
     private final UserServiceClient userServiceClient;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -48,8 +52,20 @@ public class AuthService {
 
     public record TokenPair(String accessToken, String refreshToken) {}
 
+    /**
+     * Creates register for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param email input consumed by register.
+     * @param rawPassword input consumed by register.
+     * @param deviceId input consumed by register.
+     * @return result produced by register.
+     */
     @Transactional
     public TokenPair register(String email, String rawPassword, String deviceId) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthService#register");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthService#register with debug context");
         try {
             var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
                     email,
@@ -89,6 +105,16 @@ public class AuthService {
         }
     }
 
+    /**
+     * Executes login for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param email input consumed by login.
+     * @param rawPassword input consumed by login.
+     * @param deviceId input consumed by login.
+     * @return result produced by login.
+     */
     @Transactional
     public TokenPair login(String email, String rawPassword, String deviceId) {
         try {
@@ -105,6 +131,15 @@ public class AuthService {
         }
     }
 
+    /**
+     * Updates refresh for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param refreshPlain input consumed by refresh.
+     * @param deviceId input consumed by refresh.
+     * @return result produced by refresh.
+     */
     @Transactional
     public TokenPair refresh(String refreshPlain, String deviceId) {
         String hash = sha256Hex(refreshPlain);
@@ -141,6 +176,14 @@ public class AuthService {
         return issueTokens(principal, deviceId);
     }
 
+    /**
+     * Executes revoke refresh for user device for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param userId input consumed by revokeRefreshForUserDevice.
+     * @param deviceId input consumed by revokeRefreshForUserDevice.
+     */
     @Transactional
     public void revokeRefreshForUserDevice(UUID userId, String deviceId) {
         // Immediate enforcement in Redis
@@ -149,12 +192,28 @@ public class AuthService {
         refreshTokenRepository.deleteByUserIdAndDeviceId(userId, deviceId);
     }
 
+    /**
+     * Executes revoke all refresh for user for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param userId input consumed by revokeAllRefreshForUser.
+     */
     @Transactional
     public void revokeAllRefreshForUser(UUID userId) {
         refreshStore.revokeAllForUser(userId);
         refreshTokenRepository.deleteByUserId(userId);
     }
 
+    /**
+     * Executes issue tokens for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param principal input consumed by issueTokens.
+     * @param deviceId input consumed by issueTokens.
+     * @return result produced by issueTokens.
+     */
     private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId) {
         long tv = tokenVersionService.getVersion(principal.userId());
         String access = jwtService.generateAccessToken(principal.email(), principal.userId().toString(), tv, principal.roles());
@@ -178,6 +237,14 @@ public class AuthService {
         return new TokenPair(access, refreshPlain);
     }
 
+    /**
+     * Executes sha256 hex for `AuthService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param value input consumed by sha256Hex.
+     * @return result produced by sha256Hex.
+     */
     private static String sha256Hex(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

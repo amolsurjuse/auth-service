@@ -1,6 +1,8 @@
 package com.electrahub.identity.config;
 
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.service.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -20,6 +22,8 @@ import java.util.UUID;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilter.class);
+
 
     private final JwtService jwtService;
     private final TokenDenylistService denylistService;
@@ -89,7 +93,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * Executes remaining ttl for `JwtAuthFilter`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @param exp input consumed by remainingTtl.
+     * @return result produced by remainingTtl.
+     */
     public static Duration remainingTtl(Date exp) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilter#remainingTtl");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilter#remainingTtl with debug context");
         long seconds = Math.max(0, exp.toInstant().getEpochSecond() - Instant.now().getEpochSecond());
         return Duration.ofSeconds(seconds);
     }

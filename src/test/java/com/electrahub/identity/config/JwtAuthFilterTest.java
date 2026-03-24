@@ -1,5 +1,7 @@
 package com.electrahub.identity.config;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.service.JwtService;
 import com.electrahub.identity.service.TokenDenylistService;
 import com.electrahub.identity.service.TokenVersionService;
@@ -19,12 +21,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class JwtAuthFilterTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilterTest.class);
 
+
+    /**
+     * Removes clear context for `JwtAuthFilterTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     */
     @AfterEach
     void clearContext() {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilterTest#clearContext");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilterTest#clearContext with debug context");
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Executes no authorization header skips authentication for `JwtAuthFilterTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     */
     @Test
     void noAuthorizationHeaderSkipsAuthentication() throws Exception {
         JwtService jwtService = mock(JwtService.class);
@@ -43,6 +61,12 @@ class JwtAuthFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    /**
+     * Executes valid token authenticates and sets attributes for `JwtAuthFilterTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     */
     @Test
     void validTokenAuthenticatesAndSetsAttributes() throws Exception {
         JwtService jwtService = mock(JwtService.class);
@@ -80,6 +104,12 @@ class JwtAuthFilterTest {
         assertThat(req.getAttribute("exp")).isEqualTo(exp);
     }
 
+    /**
+     * Executes remaining ttl is non negative for `JwtAuthFilterTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     */
     @Test
     void remainingTtlIsNonNegative() {
         Date exp = Date.from(Instant.now().plusSeconds(5));
