@@ -45,45 +45,6 @@ class LiquibaseE2ETest {
         }
     }
 
-    /*@Test
-    /**
-     * Executes liquibase creates tables and seeds countries for `LiquibaseE2ETest`.
-     *
-     * <p>Detailed behavior: follows the current implementation path and
-     * enforces component-specific rules in `com.electrahub.identity.e2e`.
-     */
-    void liquibaseCreatesTablesAndSeedsCountries() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering LiquibaseE2ETest#liquibaseCreatesTablesAndSeedsCountries");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering LiquibaseE2ETest#liquibaseCreatesTablesAndSeedsCountries with debug context");
-        Integer changelogTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where table_name = 'DATABASECHANGELOG' and table_schema = 'PUBLIC'",
-                Integer.class
-        );
-        assertThat(changelogTableCount).isNotNull();
-        assertThat(changelogTableCount).isGreaterThan(0);
-
-        Integer changelogCount = jdbcTemplate.queryForObject(
-                "select count(*) from DATABASECHANGELOG",
-                Integer.class
-        );
-        assertThat(changelogCount).isNotNull();
-        assertThat(changelogCount).isGreaterThan(0);
-
-        Integer tableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where table_name = 'COUNTRY' and table_schema = 'PUBLIC'",
-                Integer.class
-        );
-        assertThat(tableCount).isNotNull();
-        assertThat(tableCount).isGreaterThan(0);
-
-        Integer countryCount = jdbcTemplate.queryForObject(
-                "select count(*) from country",
-                Integer.class
-        );
-        assertThat(countryCount).isNotNull();
-        assertThat(countryCount).isGreaterThan(0);
-    }*/
-
     @Test
     void countriesApiReturnsSeededList() throws Exception {
         when(userServiceClient.listCountries()).thenReturn(java.util.List.of(
