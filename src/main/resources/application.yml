@@ -69,7 +69,6 @@ app:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
       secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
       access-token-ttl-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_MINUTES:15}
-      admin-access-token-ttl-minutes: ${APP_SECURITY_JWT_ADMIN_ACCESS_TOKEN_TTL_MINUTES:30}
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
 
   cookies:
@@ -96,9 +95,3 @@ springdoc:
   swagger-ui:
     path: ${SPRINGDOC_SWAGGER_UI_PATH:/swagger-ui.html}
     disable-swagger-default-url: ${SPRINGDOC_SWAGGER_UI_DISABLE_DEFAULT_URL:false}
-
-grpc:
-  server:
-    port: ${GRPC_SERVER_PORT:9080}
-    reflection-service-enabled: ${GRPC_REFLECTION_ENABLED:true}
-    health-service-enabled: true
