@@ -21,15 +21,18 @@ public class JwtService {
     private final Key signingKey;
     private final String issuer;
     private final long accessTtlMinutes;
+    private final long adminAccessTtlMinutes;
 
     public JwtService(
             @Value("${app.security.jwt.secret}") String secret,
             @Value("${app.security.jwt.issuer}") String issuer,
-            @Value("${app.security.jwt.access-token-ttl-minutes}") long accessTtlMinutes
+            @Value("${app.security.jwt.access-token-ttl-minutes}") long accessTtlMinutes,
+            @Value("${app.security.jwt.admin-access-token-ttl-minutes}") long adminAccessTtlMinutes
     ) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.issuer = issuer;
         this.accessTtlMinutes = accessTtlMinutes;
+        this.adminAccessTtlMinutes = adminAccessTtlMinutes;
     }
 
     public record ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp, List<String> roles) {}
@@ -48,8 +51,9 @@ public class JwtService {
     public String generateAccessToken(String subjectEmail, String uid, long tokenVersion, List<String> roles) {
         LOGGER.info("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken");
         LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken with debug context");
+        long ttlMinutes = resolveAccessTtlMinutes(roles);
         Instant now = Instant.now();
-        Instant exp = now.plus(accessTtlMinutes, ChronoUnit.MINUTES);
+        Instant exp = now.plus(ttlMinutes, ChronoUnit.MINUTES);
 
         return Jwts.builder()
                 .subject(subjectEmail)
@@ -115,5 +119,12 @@ public class JwtService {
      */
     public boolean isNotExpired(Date exp) {
         return exp != null && exp.after(new Date());
+    }
+
+    private long resolveAccessTtlMinutes(List<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return accessTtlMinutes;
+        }
+        return roles.stream().anyMatch("SYSTEM_ADMIN"::equals) ? adminAccessTtlMinutes : accessTtlMinutes;
     }
 }

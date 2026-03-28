@@ -106,6 +106,35 @@ class AuthControllerTest {
     }
 
     /**
+     * Updates refresh sets rotated cookie and returns new access token for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
+    @Test
+    void refreshSetsRotatedCookieAndReturnsAccessToken() {
+        AuthService authService = mock(AuthService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(authService.refresh("refresh-cookie", "device-id"))
+                .thenReturn(new AuthService.TokenPair("new-access-token", "new-refresh-token"));
+        when(cookieUtil.buildRefreshCookie(eq("new-refresh-token"), any()))
+                .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh-token").path("/").build());
+
+        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh("refresh-cookie", "device-id");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("new-access-token");
+        assertThat(response.getHeaders().get(HttpHeaders.SET_COOKIE)).hasSize(1);
+        verify(authService).refresh("refresh-cookie", "device-id");
+    }
+
+    /**
      * Executes logout device revokes and clears cookie for `AuthControllerTest`.
      *
      * <p>Detailed behavior: follows the current implementation path and

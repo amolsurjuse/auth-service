@@ -133,6 +133,27 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- gRPC Server -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+            <version>3.1.0.RELEASE</version>
+        </dependency>
+
+        <!-- ElectraHub Proto (shared gRPC stubs) -->
+        <dependency>
+            <groupId>com.electrahub</groupId>
+            <artifactId>electrahub-proto</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <!-- gRPC Netty transport -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>1.68.0</version>
+        </dependency>
+
     </dependencies>
 
 	<build>
