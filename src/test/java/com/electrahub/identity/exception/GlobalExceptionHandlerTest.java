@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -90,6 +91,20 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Unexpected error");
         assertThat(response.getBody().path()).isEqualTo("/api/other");
+    }
+
+    @Test
+    void handleDisabledReturnsForbiddenWithOriginalMessage() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setRequestURI("/api/auth/login");
+
+        ResponseEntity<ApiError> response = handler.handleDisabled(new DisabledException("User account is pending deletion"), req);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("User account is pending deletion");
+        assertThat(response.getBody().path()).isEqualTo("/api/auth/login");
     }
 
     private static class TestController {

@@ -112,7 +112,7 @@ public class UserServiceClient {
     public record AuthenticateUserRequest(String email, String password) {
     }
 
-    public record UserPrincipal(UUID userId, String email, boolean enabled, List<String> roles) {
+    public record UserPrincipal(UUID userId, String email, boolean enabled, boolean pendingDeletion, List<String> roles) {
     }
 
     public record CountryView(String code, String name, String dialCode) {

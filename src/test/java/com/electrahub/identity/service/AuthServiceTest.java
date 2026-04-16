@@ -81,13 +81,27 @@ class AuthServiceTest {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         when(userServiceClient.authenticate(any()))
                 .thenReturn(new UserServiceClient.UserPrincipal(
-                        UUID.randomUUID(), "user@example.com", false, List.of("USER")));
+                        UUID.randomUUID(), "user@example.com", false, false, List.of("USER")));
 
         AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
 
         assertThatThrownBy(() -> service.login("user@example.com", "password", "device"))
                 .isInstanceOf(DisabledException.class)
                 .hasMessageContaining("User is disabled");
+    }
+
+    @Test
+    void loginThrowsWhenUserIsPendingDeletion() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        when(userServiceClient.authenticate(any()))
+                .thenReturn(new UserServiceClient.UserPrincipal(
+                        UUID.randomUUID(), "user@example.com", true, true, List.of("USER")));
+
+        AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
+
+        assertThatThrownBy(() -> service.login("user@example.com", "password", "device"))
+                .isInstanceOf(DisabledException.class)
+                .hasMessageContaining("pending deletion");
     }
 
     /**
@@ -106,7 +120,7 @@ class AuthServiceTest {
 
         UUID userId = UUID.randomUUID();
         when(userServiceClient.register(any()))
-                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, List.of("USER")));
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(1L);
         when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -168,7 +182,7 @@ class AuthServiceTest {
                 .thenReturn(new RedisRefreshSessionStore.RefreshSessionView(
                         userId, "device-1", current.getId(), current.getExpiresAt()));
         when(userServiceClient.getPrincipal(userId))
-                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, List.of("USER")));
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(2L);
         when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));

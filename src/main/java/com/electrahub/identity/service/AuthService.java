@@ -119,9 +119,7 @@ public class AuthService {
     public TokenPair login(String email, String rawPassword, String deviceId) {
         try {
             var principal = userServiceClient.authenticate(new UserServiceClient.AuthenticateUserRequest(email, rawPassword));
-            if (!principal.enabled()) {
-                throw new DisabledException("User is disabled");
-            }
+            assertLoginAllowed(principal);
             return issueTokens(principal, deviceId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 401) {
@@ -170,9 +168,7 @@ public class AuthService {
         refreshStore.delete(hash, db.getUserId(), deviceId);
 
         var principal = userServiceClient.getPrincipal(db.getUserId());
-        if (!principal.enabled()) {
-            throw new DisabledException("User is disabled");
-        }
+        assertLoginAllowed(principal);
         return issueTokens(principal, deviceId);
     }
 
@@ -235,6 +231,15 @@ public class AuthService {
         );
 
         return new TokenPair(access, refreshPlain);
+    }
+
+    private void assertLoginAllowed(UserServiceClient.UserPrincipal principal) {
+        if (!principal.enabled()) {
+            throw new DisabledException("User is disabled");
+        }
+        if (principal.pendingDeletion()) {
+            throw new DisabledException("User account is pending deletion");
+        }
     }
 
     /**
