@@ -46,8 +46,8 @@ public class JwtService {
      * @return result produced by generateAccessToken.
      */
     public String generateAccessToken(String subjectEmail, String uid, long tokenVersion, List<String> roles) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtService#generateAccessToken with debug context");
+        LOGGER.info(" Entering JwtService#generateAccessToken");
+        LOGGER.debug(" Entering JwtService#generateAccessToken with debug context");
         Instant now = Instant.now();
         Instant exp = now.plus(accessTtlMinutes, ChronoUnit.MINUTES);
 

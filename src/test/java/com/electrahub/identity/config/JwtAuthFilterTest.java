@@ -32,8 +32,8 @@ class JwtAuthFilterTest {
      */
     @AfterEach
     void clearContext() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilterTest#clearContext");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilterTest#clearContext with debug context");
+        LOGGER.info(" Entering JwtAuthFilterTest#clearContext");
+        LOGGER.debug(" Entering JwtAuthFilterTest#clearContext with debug context");
         SecurityContextHolder.clearContext();
     }
 

@@ -23,8 +23,8 @@ class UserRepositoryTest {
      */
     @Test
     void repositoryExtendsJpaRepository() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserRepositoryTest#repositoryExtendsJpaRepository");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserRepositoryTest#repositoryExtendsJpaRepository with debug context");
+        LOGGER.info(" Entering UserRepositoryTest#repositoryExtendsJpaRepository");
+        LOGGER.debug(" Entering UserRepositoryTest#repositoryExtendsJpaRepository with debug context");
         assertThat(JpaRepository.class.isAssignableFrom(UserRepository.class)).isTrue();
     }
 

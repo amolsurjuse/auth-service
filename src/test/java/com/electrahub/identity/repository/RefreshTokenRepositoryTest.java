@@ -23,8 +23,8 @@ class RefreshTokenRepositoryTest {
      */
     @Test
     void repositoryExtendsJpaRepository() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RefreshTokenRepositoryTest#repositoryExtendsJpaRepository");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RefreshTokenRepositoryTest#repositoryExtendsJpaRepository with debug context");
+        LOGGER.info(" Entering RefreshTokenRepositoryTest#repositoryExtendsJpaRepository");
+        LOGGER.debug(" Entering RefreshTokenRepositoryTest#repositoryExtendsJpaRepository with debug context");
         assertThat(JpaRepository.class.isAssignableFrom(RefreshTokenRepository.class)).isTrue();
     }
 

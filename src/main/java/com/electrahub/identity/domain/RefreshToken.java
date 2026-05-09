@@ -62,8 +62,8 @@ public class RefreshToken {
      * @return result produced by isExpiredNow.
      */
     public boolean isExpiredNow() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RefreshToken#isExpiredNow");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RefreshToken#isExpiredNow with debug context");
+        LOGGER.info(" Entering RefreshToken#isExpiredNow");
+        LOGGER.debug(" Entering RefreshToken#isExpiredNow with debug context");
         return expiresAt.isBefore(OffsetDateTime.now());
     }
 }

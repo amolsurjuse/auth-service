@@ -19,8 +19,8 @@ class OpenApiConfigTest {
      */
     @Test
     void customOpenApiHasExpectedInfo() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering OpenApiConfigTest#customOpenApiHasExpectedInfo");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering OpenApiConfigTest#customOpenApiHasExpectedInfo with debug context");
+        LOGGER.info(" Entering OpenApiConfigTest#customOpenApiHasExpectedInfo");
+        LOGGER.debug(" Entering OpenApiConfigTest#customOpenApiHasExpectedInfo with debug context");
         OpenApiConfig config = new OpenApiConfig();
 
         var api = config.customOpenAPI();

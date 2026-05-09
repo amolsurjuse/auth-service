@@ -19,8 +19,8 @@ class AddressRepositoryTest {
      */
     @Test
     void repositoryExtendsJpaRepository() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AddressRepositoryTest#repositoryExtendsJpaRepository");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AddressRepositoryTest#repositoryExtendsJpaRepository with debug context");
+        LOGGER.info(" Entering AddressRepositoryTest#repositoryExtendsJpaRepository");
+        LOGGER.debug(" Entering AddressRepositoryTest#repositoryExtendsJpaRepository with debug context");
         assertThat(JpaRepository.class.isAssignableFrom(AddressRepository.class)).isTrue();
     }
 }

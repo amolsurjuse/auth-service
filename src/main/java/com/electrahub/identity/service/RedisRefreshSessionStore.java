@@ -50,8 +50,8 @@ public class RedisRefreshSessionStore {
      * @param ttl input consumed by put.
      */
     public void put(String refreshHash, RefreshSessionView view, Duration ttl) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStore#put");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStore#put with debug context");
+        LOGGER.info(" Entering RedisRefreshSessionStore#put");
+        LOGGER.debug(" Entering RedisRefreshSessionStore#put with debug context");
         try {
             redis.opsForValue().set(rtPrefix + refreshHash, om.writeValueAsString(view), ttl);
 

@@ -21,8 +21,8 @@ class RedisConfigTest {
      */
     @Test
     void redisConnectionFactoryUsesDefaults() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RedisConfigTest#redisConnectionFactoryUsesDefaults");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RedisConfigTest#redisConnectionFactoryUsesDefaults with debug context");
+        LOGGER.info(" Entering RedisConfigTest#redisConnectionFactoryUsesDefaults");
+        LOGGER.debug(" Entering RedisConfigTest#redisConnectionFactoryUsesDefaults with debug context");
         RedisConfig config = new RedisConfig();
         MockEnvironment env = new MockEnvironment();
 

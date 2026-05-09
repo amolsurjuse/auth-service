@@ -26,8 +26,8 @@ public class OpenApiConfig {
      */
     @Bean
     public OpenAPI customOpenAPI() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering OpenApiConfig#customOpenAPI");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering OpenApiConfig#customOpenAPI with debug context");
+        LOGGER.info(" Entering OpenApiConfig#customOpenAPI");
+        LOGGER.debug(" Entering OpenApiConfig#customOpenAPI with debug context");
         return new OpenAPI()
                 .info(new Info()
                         .title("Auth Service API")

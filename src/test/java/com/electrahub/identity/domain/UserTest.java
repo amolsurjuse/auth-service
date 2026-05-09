@@ -21,8 +21,8 @@ class UserTest {
      */
     @Test
     void constructorNormalizesEmailAndSetsDefaults() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserTest#constructorNormalizesEmailAndSetsDefaults");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserTest#constructorNormalizesEmailAndSetsDefaults with debug context");
+        LOGGER.info(" Entering UserTest#constructorNormalizesEmailAndSetsDefaults");
+        LOGGER.debug(" Entering UserTest#constructorNormalizesEmailAndSetsDefaults with debug context");
         OffsetDateTime now = OffsetDateTime.now();
         User user = new User(UUID.randomUUID(), "User@Example.com", "hash", true, now);
 

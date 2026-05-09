@@ -29,8 +29,8 @@ class RedisRefreshSessionStoreTest {
      */
     @Test
     void putWritesSessionAndIndexes() throws Exception {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes with debug context");
+        LOGGER.info(" Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes");
+        LOGGER.debug(" Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes with debug context");
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
         ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);

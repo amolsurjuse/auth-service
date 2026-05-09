@@ -18,8 +18,8 @@ public class AuthServiceApplication {
 	 * @param args input consumed by main.
 	 */
 	public static void main(String[] args) {
-	    LOGGER.info("CODEx_ENTRY_LOG: Entering AuthServiceApplication#main");
-	    LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthServiceApplication#main with debug context");
+	    LOGGER.info(" Entering AuthServiceApplication#main");
+	    LOGGER.debug(" Entering AuthServiceApplication#main with debug context");
 		SpringApplication.run(AuthServiceApplication.class, args);
 	}
 

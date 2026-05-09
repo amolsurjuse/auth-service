@@ -21,8 +21,8 @@ class CookieUtilTest {
      */
     @Test
     void buildRefreshCookieUsesHttpOnlyAndMaxAge() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CookieUtilTest#buildRefreshCookieUsesHttpOnlyAndMaxAge");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CookieUtilTest#buildRefreshCookieUsesHttpOnlyAndMaxAge with debug context");
+        LOGGER.info(" Entering CookieUtilTest#buildRefreshCookieUsesHttpOnlyAndMaxAge");
+        LOGGER.debug(" Entering CookieUtilTest#buildRefreshCookieUsesHttpOnlyAndMaxAge with debug context");
         CookieUtil util = new CookieUtil("__Host-rt", "did", "Lax");
 
         ResponseCookie cookie = util.buildRefreshCookie("token", Duration.ofDays(1));

@@ -20,8 +20,8 @@ class ApiErrorTest {
      */
     @Test
     void recordHoldsFields() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering ApiErrorTest#recordHoldsFields");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering ApiErrorTest#recordHoldsFields with debug context");
+        LOGGER.info(" Entering ApiErrorTest#recordHoldsFields");
+        LOGGER.debug(" Entering ApiErrorTest#recordHoldsFields with debug context");
         OffsetDateTime ts = OffsetDateTime.now();
         ApiError error = new ApiError(ts, 400, "Bad Request", "msg", "/path");
 

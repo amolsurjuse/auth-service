@@ -20,8 +20,8 @@ class AddressTest {
      */
     @Test
     void constructorSetsFields() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AddressTest#constructorSetsFields");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AddressTest#constructorSetsFields with debug context");
+        LOGGER.info(" Entering AddressTest#constructorSetsFields");
+        LOGGER.debug(" Entering AddressTest#constructorSetsFields with debug context");
         Country country = new Country(UUID.randomUUID(), "US", "United States", "+1", true);
         Address address = new Address(UUID.randomUUID(), "street", "city", "state", "12345", country);
 

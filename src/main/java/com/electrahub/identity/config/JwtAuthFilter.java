@@ -102,8 +102,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      * @return result produced by remainingTtl.
      */
     public static Duration remainingTtl(Date exp) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilter#remainingTtl");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilter#remainingTtl with debug context");
+        LOGGER.info(" Entering JwtAuthFilter#remainingTtl");
+        LOGGER.debug(" Entering JwtAuthFilter#remainingTtl with debug context");
         long seconds = Math.max(0, exp.toInstant().getEpochSecond() - Instant.now().getEpochSecond());
         return Duration.ofSeconds(seconds);
     }

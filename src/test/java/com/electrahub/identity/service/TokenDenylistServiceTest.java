@@ -23,8 +23,8 @@ class TokenDenylistServiceTest {
      */
     @Test
     void denyWritesToRedisWhenValid() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering TokenDenylistServiceTest#denyWritesToRedisWhenValid");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering TokenDenylistServiceTest#denyWritesToRedisWhenValid with debug context");
+        LOGGER.info(" Entering TokenDenylistServiceTest#denyWritesToRedisWhenValid");
+        LOGGER.debug(" Entering TokenDenylistServiceTest#denyWritesToRedisWhenValid with debug context");
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = mock(ValueOperations.class);
         when(redis.opsForValue()).thenReturn(ops);

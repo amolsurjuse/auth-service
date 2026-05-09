@@ -40,8 +40,8 @@ public class Country {
      * @param enabled input consumed by Country.
      */
     public Country(UUID id, String isoCode, String name, String dialCode, boolean enabled) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Country#Country");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Country#Country with debug context");
+        LOGGER.info(" Entering Country#Country");
+        LOGGER.debug(" Entering Country#Country with debug context");
         this.id = id;
         this.isoCode = isoCode;
         this.name = name;

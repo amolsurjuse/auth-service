@@ -20,8 +20,8 @@ class CacheConfigTest {
      */
     @Test
     void cacheManagerBuildsWithUserDetailsCache() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CacheConfigTest#cacheManagerBuildsWithUserDetailsCache");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CacheConfigTest#cacheManagerBuildsWithUserDetailsCache with debug context");
+        LOGGER.info(" Entering CacheConfigTest#cacheManagerBuildsWithUserDetailsCache");
+        LOGGER.debug(" Entering CacheConfigTest#cacheManagerBuildsWithUserDetailsCache with debug context");
         CacheConfig config = new CacheConfig();
         LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory();
 

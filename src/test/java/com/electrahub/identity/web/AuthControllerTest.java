@@ -35,8 +35,8 @@ class AuthControllerTest {
      */
     @Test
     void registerSetsCookiesAndReturnsAccessToken() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken with debug context");
+        LOGGER.info(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken");
+        LOGGER.debug(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken with debug context");
         AuthService authService = mock(AuthService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);

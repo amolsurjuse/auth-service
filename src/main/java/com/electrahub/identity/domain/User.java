@@ -64,8 +64,8 @@ public class User {
      * @param now input consumed by User.
      */
     public User(UUID id, String email, String passwordHash, boolean enabled, OffsetDateTime now) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering User#User");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering User#User with debug context");
+        LOGGER.info(" Entering User#User");
+        LOGGER.debug(" Entering User#User with debug context");
         this.id = id;
         this.email = email.toLowerCase();
         this.passwordHash = passwordHash;

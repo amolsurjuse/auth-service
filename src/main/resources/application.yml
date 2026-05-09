@@ -11,6 +11,8 @@ logging:
     org.springframework: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:WARN}
     org.hibernate: ${LOGGING_LEVEL_ORG_HIBERNATE:WARN}
     liquibase: ${LOGGING_LEVEL_LIQUIBASE:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
 
 spring:
   datasource:
@@ -57,6 +59,10 @@ management:
       probes:
         enabled: true
       show-details: never
+  tracing:
+    sampling:
+      probability: ${AUTH_SERVICE_TRACING_SAMPLING_PROBABILITY:1.0}
+
 
 app:
   user-service:

@@ -30,8 +30,8 @@ public class UserServiceClient {
      * @return result produced by Value.
      */
     public UserServiceClient(@Value("${app.user-service.base-url}") String userServiceBaseUrl) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserServiceClient#Value");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserServiceClient#Value with debug context");
+        LOGGER.info(" Entering UserServiceClient#Value");
+        LOGGER.debug(" Entering UserServiceClient#Value with debug context");
         this.restClient = RestClient.builder()
                 .baseUrl(userServiceBaseUrl)
                 .build();

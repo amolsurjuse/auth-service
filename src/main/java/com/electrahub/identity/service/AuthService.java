@@ -64,8 +64,8 @@ public class AuthService {
      */
     @Transactional
     public TokenPair register(String email, String rawPassword, String deviceId) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthService#register");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthService#register with debug context");
+        LOGGER.info(" Entering AuthService#register");
+        LOGGER.debug(" Entering AuthService#register with debug context");
         try {
             var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
                     email,

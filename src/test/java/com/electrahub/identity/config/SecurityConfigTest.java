@@ -22,8 +22,8 @@ class SecurityConfigTest {
      */
     @Test
     void corsConfigurationSourceUsesConfiguredOriginPatterns() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns with debug context");
+        LOGGER.info(" Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns");
+        LOGGER.debug(" Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns with debug context");
         CorsProperties corsProperties = new CorsProperties();
         corsProperties.setAllowedOriginPatterns(List.of("http://localhost:4200", "https://*.electrahub.com"));
         SecurityConfig config = new SecurityConfig(corsProperties);

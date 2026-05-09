@@ -20,7 +20,7 @@ public class JpaLiquibaseDependencyConfig extends EntityManagerFactoryDependsOnP
      */
     public JpaLiquibaseDependencyConfig() {
         super("liquibase");
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JpaLiquibaseDependencyConfig#JpaLiquibaseDependencyConfig");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JpaLiquibaseDependencyConfig#JpaLiquibaseDependencyConfig with debug context");
+        LOGGER.info(" Entering JpaLiquibaseDependencyConfig#JpaLiquibaseDependencyConfig");
+        LOGGER.debug(" Entering JpaLiquibaseDependencyConfig#JpaLiquibaseDependencyConfig with debug context");
     }
 }

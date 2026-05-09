@@ -21,8 +21,8 @@ class RefreshTokenTest {
      */
     @Test
     void revokeSetsFlag() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RefreshTokenTest#revokeSetsFlag");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RefreshTokenTest#revokeSetsFlag with debug context");
+        LOGGER.info(" Entering RefreshTokenTest#revokeSetsFlag");
+        LOGGER.debug(" Entering RefreshTokenTest#revokeSetsFlag with debug context");
         UUID userId = UUID.randomUUID();
         RefreshToken token = new RefreshToken(UUID.randomUUID(), userId, "device", "hash", OffsetDateTime.now().plusDays(1), OffsetDateTime.now());
 

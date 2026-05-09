@@ -23,8 +23,8 @@ class JwtServiceTest {
      */
     @Test
     void generateAndParseAccessToken() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtServiceTest#generateAndParseAccessToken");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtServiceTest#generateAndParseAccessToken with debug context");
+        LOGGER.info(" Entering JwtServiceTest#generateAndParseAccessToken");
+        LOGGER.debug(" Entering JwtServiceTest#generateAndParseAccessToken with debug context");
         JwtService service = new JwtService(
                 "01234567890123456789012345678901",
                 "issuer",

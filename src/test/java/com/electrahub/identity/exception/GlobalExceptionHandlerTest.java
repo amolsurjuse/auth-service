@@ -30,8 +30,8 @@ class GlobalExceptionHandlerTest {
      */
     @Test
     void handleValidationUsesFirstErrorMessage() throws Exception {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage with debug context");
+        LOGGER.info(" Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage");
+        LOGGER.debug(" Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage with debug context");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
         LoginRequest reqObj = new LoginRequest("bad", "");

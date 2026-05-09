@@ -45,8 +45,8 @@ public class Address {
      * @param country input consumed by Address.
      */
     public Address(UUID id, String street, String city, String state, String postalCode, Country country) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Address#Address");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Address#Address with debug context");
+        LOGGER.info(" Entering Address#Address");
+        LOGGER.debug(" Entering Address#Address with debug context");
         this.id = id;
         this.street = street;
         this.city = city;

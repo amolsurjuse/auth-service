@@ -22,8 +22,8 @@ class DtoValidationTest {
      */
     @Test
     void loginRequestValidatesEmailAndPassword() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering DtoValidationTest#loginRequestValidatesEmailAndPassword");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering DtoValidationTest#loginRequestValidatesEmailAndPassword with debug context");
+        LOGGER.info(" Entering DtoValidationTest#loginRequestValidatesEmailAndPassword");
+        LOGGER.debug(" Entering DtoValidationTest#loginRequestValidatesEmailAndPassword with debug context");
         LoginRequest invalid = new LoginRequest("bad", "");
         LoginRequest valid = new LoginRequest("user@example.com", "password");
 

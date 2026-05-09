@@ -32,8 +32,8 @@ public class ObservabilityAspect {
      * @param meterRegistry input consumed by ObservabilityAspect.
      */
     public ObservabilityAspect(MeterRegistry meterRegistry) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering ObservabilityAspect#ObservabilityAspect");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering ObservabilityAspect#ObservabilityAspect with debug context");
+        LOGGER.info(" Entering ObservabilityAspect#ObservabilityAspect");
+        LOGGER.debug(" Entering ObservabilityAspect#ObservabilityAspect with debug context");
         this.meterRegistry = meterRegistry;
     }
 
@@ -41,7 +41,8 @@ public class ObservabilityAspect {
             "(within(@org.springframework.web.bind.annotation.RestController *) || " +
             "within(@org.springframework.stereotype.Controller *) || " +
             "within(@org.springframework.stereotype.Service *) || " +
-            "within(@org.springframework.stereotype.Repository *)) && " +
+            "within(@org.springframework.stereotype.Repository *) || " +
+            "within(@org.springframework.stereotype.Component *)) && " +
             "!within(com.electrahub..observability..*)")
     /**
      * Executes observe for `ObservabilityAspect`.

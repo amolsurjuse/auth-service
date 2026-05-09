@@ -27,8 +27,8 @@ public class LiquibaseConfig {
     @Bean
     @ConditionalOnProperty(name = "spring.liquibase.enabled", havingValue = "true", matchIfMissing = true)
     SpringLiquibase liquibase(DataSource dataSource, Environment environment) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering LiquibaseConfig#liquibase");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering LiquibaseConfig#liquibase with debug context");
+        LOGGER.info(" Entering LiquibaseConfig#liquibase");
+        LOGGER.debug(" Entering LiquibaseConfig#liquibase with debug context");
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog(environment.getProperty(

@@ -22,8 +22,8 @@ class CountryRepositoryTest {
      */
     @Test
     void repositoryExtendsJpaRepository() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CountryRepositoryTest#repositoryExtendsJpaRepository");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CountryRepositoryTest#repositoryExtendsJpaRepository with debug context");
+        LOGGER.info(" Entering CountryRepositoryTest#repositoryExtendsJpaRepository");
+        LOGGER.debug(" Entering CountryRepositoryTest#repositoryExtendsJpaRepository with debug context");
         assertThat(JpaRepository.class.isAssignableFrom(CountryRepository.class)).isTrue();
     }
 

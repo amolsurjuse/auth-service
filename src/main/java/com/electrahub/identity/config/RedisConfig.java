@@ -25,8 +25,8 @@ public class RedisConfig {
      */
     @Bean
     public LettuceConnectionFactory redisConnectionFactory(Environment env) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RedisConfig#redisConnectionFactory");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RedisConfig#redisConnectionFactory with debug context");
+        LOGGER.info(" Entering RedisConfig#redisConnectionFactory");
+        LOGGER.debug(" Entering RedisConfig#redisConnectionFactory with debug context");
         String host = env.getProperty("spring.data.redis.host", "redis");
         int port = Integer.parseInt(env.getProperty("spring.data.redis.port", "6379"));
         String password = env.getProperty("spring.data.redis.password");

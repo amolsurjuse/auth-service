@@ -20,8 +20,8 @@ class RoleTest {
      */
     @Test
     void constructorSetsFields() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RoleTest#constructorSetsFields");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RoleTest#constructorSetsFields with debug context");
+        LOGGER.info(" Entering RoleTest#constructorSetsFields");
+        LOGGER.debug(" Entering RoleTest#constructorSetsFields with debug context");
         UUID id = UUID.randomUUID();
         Role role = new Role(id, "ADMIN");
 

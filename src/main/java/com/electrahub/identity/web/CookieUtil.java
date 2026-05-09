@@ -40,8 +40,8 @@ public class CookieUtil {
      * @return result produced by buildRefreshCookie.
      */
     public ResponseCookie buildRefreshCookie(String refreshToken, Duration ttl) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CookieUtil#buildRefreshCookie");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CookieUtil#buildRefreshCookie with debug context");
+        LOGGER.info(" Entering CookieUtil#buildRefreshCookie");
+        LOGGER.debug(" Entering CookieUtil#buildRefreshCookie with debug context");
         return ResponseCookie.from(refreshName, refreshToken)
                 .httpOnly(true)
                 .secure(true)     // set false ONLY for localhost HTTP testing

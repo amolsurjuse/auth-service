@@ -37,8 +37,8 @@ class AuthServiceTest {
      */
     @Test
     void registerMapsDuplicateEmailConflictToValidationError() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError with debug context");
+        LOGGER.info(" Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError");
+        LOGGER.debug(" Entering AuthServiceTest#registerMapsDuplicateEmailConflictToValidationError with debug context");
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         when(userServiceClient.register(any()))
                 .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));

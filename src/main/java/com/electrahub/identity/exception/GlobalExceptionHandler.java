@@ -28,8 +28,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering GlobalExceptionHandler#handleValidation");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering GlobalExceptionHandler#handleValidation with debug context");
+        LOGGER.info(" Entering GlobalExceptionHandler#handleValidation");
+        LOGGER.debug(" Entering GlobalExceptionHandler#handleValidation with debug context");
         String msg = ex.getBindingResult().getAllErrors().stream()
                 .findFirst()
                 .map(e -> e.getDefaultMessage())

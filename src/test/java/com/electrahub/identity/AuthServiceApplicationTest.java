@@ -19,8 +19,8 @@ class AuthServiceApplicationTest {
      */
     @Test
     void applicationHasSpringBootAnnotation() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthServiceApplicationTest#applicationHasSpringBootAnnotation");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthServiceApplicationTest#applicationHasSpringBootAnnotation with debug context");
+        LOGGER.info(" Entering AuthServiceApplicationTest#applicationHasSpringBootAnnotation");
+        LOGGER.debug(" Entering AuthServiceApplicationTest#applicationHasSpringBootAnnotation with debug context");
         SpringBootApplication annotation = AuthServiceApplication.class.getAnnotation(SpringBootApplication.class);
         assertThat(annotation).isNotNull();
     }

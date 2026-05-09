@@ -27,8 +27,8 @@ public class Role {
      * @param name input consumed by Role.
      */
     public Role(UUID id, String name) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Role#Role");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Role#Role with debug context");
+        LOGGER.info(" Entering Role#Role");
+        LOGGER.debug(" Entering Role#Role with debug context");
         this.id = id;
         this.name = name;
     }

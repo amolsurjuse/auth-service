@@ -139,8 +139,8 @@ public class AuthController {
      */
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAll(HttpServletRequest request) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AuthController#logoutAll");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AuthController#logoutAll with debug context");
+        LOGGER.info(" Entering AuthController#logoutAll");
+        LOGGER.debug(" Entering AuthController#logoutAll with debug context");
         String uid = (String) request.getAttribute("uid");
         String jti = (String) request.getAttribute("jti");
         Date exp = (Date) request.getAttribute("exp");

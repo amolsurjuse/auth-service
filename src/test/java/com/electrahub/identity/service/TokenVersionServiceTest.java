@@ -23,8 +23,8 @@ class TokenVersionServiceTest {
      */
     @Test
     void getVersionReturnsZeroWhenMissing() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering TokenVersionServiceTest#getVersionReturnsZeroWhenMissing");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering TokenVersionServiceTest#getVersionReturnsZeroWhenMissing with debug context");
+        LOGGER.info(" Entering TokenVersionServiceTest#getVersionReturnsZeroWhenMissing");
+        LOGGER.debug(" Entering TokenVersionServiceTest#getVersionReturnsZeroWhenMissing with debug context");
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
         ValueOperations<String, String> ops = mock(ValueOperations.class);
         when(redis.opsForValue()).thenReturn(ops);

@@ -20,8 +20,8 @@ class CountryTest {
      */
     @Test
     void constructorSetsFields() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CountryTest#constructorSetsFields");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CountryTest#constructorSetsFields with debug context");
+        LOGGER.info(" Entering CountryTest#constructorSetsFields");
+        LOGGER.debug(" Entering CountryTest#constructorSetsFields with debug context");
         UUID id = UUID.randomUUID();
         Country country = new Country(id, "US", "United States", "+1", true);
 
