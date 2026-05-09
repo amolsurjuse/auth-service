@@ -1,0 +1,35 @@
+name: Block Direct Pushes to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  block-direct-push:
+    name: Enforce PR-based merges only
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if push is a merge commit
+        run: |
+          PARENT_COUNT=$(git log --pretty=format:%P -n 1 HEAD | wc -w)
+          echo "Number of parent commits: $PARENT_COUNT"
+
+          # A true merge commit always has 2+ parents.
+          # Direct pushes and squash-merges produce a single-parent commit.
+          # Repository settings should also disable squash-merge and rebase-merge
+          # so that only standard merge commits reach main.
+          if [ "$PARENT_COUNT" -lt 2 ]; then
+            echo "::error::Direct pushes to the main branch are not allowed."
+            echo "::error::All changes must be submitted via a pull request and merged using a merge commit."
+            exit 1
+          fi
+
+          echo "Push is a merge commit — allowed."
