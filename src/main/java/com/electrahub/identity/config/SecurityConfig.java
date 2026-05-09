@@ -16,6 +16,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import com.electrahub.identity.service.JwtService;
+import com.electrahub.identity.service.TokenDenylistService;
+import com.electrahub.identity.service.TokenVersionService;
 
 @Configuration
 @EnableMethodSecurity
@@ -95,5 +98,19 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Create JwtAuthFilter as a Spring bean instead of using @Component on the filter.
+     * This prevents the servlet container from auto-registering the filter and
+     * avoids calling the servlet Filter init path which previously triggered a NPE.
+     */
+    @Bean
+    public JwtAuthFilter jwtAuthFilter(
+            JwtService jwtService,
+            TokenDenylistService denylistService,
+            TokenVersionService tokenVersionService
+    ) {
+        return new JwtAuthFilter(jwtService, denylistService, tokenVersionService);
     }
 }
