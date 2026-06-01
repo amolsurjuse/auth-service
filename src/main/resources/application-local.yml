@@ -38,3 +38,6 @@ logging:
 app:
   user-service:
     base-url: ${LOCAL_APP_USER_SERVICE_BASE_URL:http://127.0.0.1:8082}
+  security:
+    jwt:
+      refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
