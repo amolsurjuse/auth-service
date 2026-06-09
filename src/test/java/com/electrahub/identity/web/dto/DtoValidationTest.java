@@ -31,6 +31,15 @@ class DtoValidationTest {
         assertThat(validator.validate(valid)).isEmpty();
     }
 
+    @Test
+    void googleOidcLoginRequestRequiresIdTokenAndLimitsNonce() {
+        GoogleOidcLoginRequest invalid = new GoogleOidcLoginRequest("", "n".repeat(129));
+        GoogleOidcLoginRequest valid = new GoogleOidcLoginRequest("id-token", "nonce");
+
+        assertThat(validator.validate(invalid)).isNotEmpty();
+        assertThat(validator.validate(valid)).isEmpty();
+    }
+
     /**
      * Creates register request validates fields for `DtoValidationTest`.
      *

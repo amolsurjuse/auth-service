@@ -21,6 +21,7 @@ public class AuthController {
 
 
     private final AuthService authService;
+    private final OAuthLoginService oauthLoginService;
     private final CookieUtil cookieUtil;
     private final TokenDenylistService denylistService;
     private final TokenVersionService tokenVersionService;
@@ -29,12 +30,14 @@ public class AuthController {
 
     public AuthController(
             AuthService authService,
+            OAuthLoginService oauthLoginService,
             CookieUtil cookieUtil,
             TokenDenylistService denylistService,
             TokenVersionService tokenVersionService,
             @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
         this.authService = authService;
+        this.oauthLoginService = oauthLoginService;
         this.cookieUtil = cookieUtil;
         this.denylistService = denylistService;
         this.tokenVersionService = tokenVersionService;
@@ -42,6 +45,22 @@ public class AuthController {
     }
 
     public record AccessTokenResponse(String accessToken, String tokenType) {}
+
+    @PostMapping("/oauth/google")
+    public ResponseEntity<AccessTokenResponse> googleLogin(
+            @Valid @RequestBody GoogleOidcLoginRequest req,
+            @CookieValue(name = "did", required = false) String did
+    ) {
+        String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+
+        AuthService.TokenPair pair = oauthLoginService.loginWithGoogle(req.idToken(), req.nonce(), deviceId);
+        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<AccessTokenResponse> register(

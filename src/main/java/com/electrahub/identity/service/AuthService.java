@@ -210,6 +210,12 @@ public class AuthService {
      * @param deviceId input consumed by issueTokens.
      * @return result produced by issueTokens.
      */
+    @Transactional
+    public TokenPair issueTokensForPrincipal(UserServiceClient.UserPrincipal principal, String deviceId) {
+        assertLoginAllowed(principal);
+        return issueTokens(principal, deviceId);
+    }
+
     private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId) {
         long tv = tokenVersionService.getVersion(principal.userId());
         String access = jwtService.generateAccessToken(principal.email(), principal.userId().toString(), tv, principal.roles());

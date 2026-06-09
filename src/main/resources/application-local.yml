@@ -41,3 +41,10 @@ app:
   security:
     jwt:
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+    oauth:
+      google:
+        enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}
+        issuer: ${APP_SECURITY_OAUTH_GOOGLE_ISSUER:https://accounts.google.com}
+        jwk-set-uri: ${APP_SECURITY_OAUTH_GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+        audiences: ${APP_SECURITY_OAUTH_GOOGLE_AUDIENCES:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_GOOGLE_AUTO_PROVISION_USERS:true}

@@ -3,8 +3,10 @@ package com.electrahub.identity.web;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import com.electrahub.identity.service.AuthService;
+import com.electrahub.identity.service.OAuthLoginService;
 import com.electrahub.identity.service.TokenDenylistService;
 import com.electrahub.identity.service.TokenVersionService;
+import com.electrahub.identity.web.dto.GoogleOidcLoginRequest;
 import com.electrahub.identity.web.dto.AddressDto;
 import com.electrahub.identity.web.dto.LoginRequest;
 import com.electrahub.identity.web.dto.RegisterRequest;
@@ -38,6 +40,7 @@ class AuthControllerTest {
         LOGGER.info(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken");
         LOGGER.debug(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken with debug context");
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
@@ -46,7 +49,7 @@ class AuthControllerTest {
         when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device").path("/").build());
         when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
 
         RegisterRequest req = new RegisterRequest("user@example.com", "password123", "First", "Last", "+12345678901",
                 new AddressDto("street", "city", "state", "12345", "US"));
@@ -67,6 +70,7 @@ class AuthControllerTest {
     @Test
     void loginSetsCookiesAndReturnsAccessToken() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
@@ -75,7 +79,7 @@ class AuthControllerTest {
         when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device").path("/").build());
         when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
 
         LoginRequest req = new LoginRequest("user@example.com", "password");
         ResponseEntity<AuthController.AccessTokenResponse> response = controller.login(req, "did");
@@ -83,6 +87,32 @@ class AuthControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void googleLoginSetsCookiesAndReturnsAccessToken() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(oauthLoginService.loginWithGoogle(eq("google-id-token"), eq("nonce-1"), eq("device-1")))
+                .thenReturn(new AuthService.TokenPair("access", "refresh"));
+        when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device-1").path("/").build());
+        when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.googleLogin(
+                new GoogleOidcLoginRequest("google-id-token", "nonce-1"),
+                "device-1"
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().get(HttpHeaders.SET_COOKIE)).hasSize(2);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("access");
     }
 
     /**
@@ -94,11 +124,12 @@ class AuthControllerTest {
     @Test
     void refreshWithoutCookiesReturnsUnauthorized() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
 
         ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(null, null);
 
@@ -114,13 +145,14 @@ class AuthControllerTest {
     @Test
     void logoutDeviceRevokesAndClearsCookie() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
         when(cookieUtil.clearRefreshCookie()).thenReturn(ResponseCookie.from("__Host-rt", "").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         UUID userId = UUID.randomUUID();
@@ -144,13 +176,14 @@ class AuthControllerTest {
     @Test
     void logoutAllRevokesAllAndBumpsVersion() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
         when(cookieUtil.clearRefreshCookie()).thenReturn(ResponseCookie.from("__Host-rt", "").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, 7);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         UUID userId = UUID.randomUUID();

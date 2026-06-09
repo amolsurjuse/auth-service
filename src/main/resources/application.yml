@@ -76,6 +76,13 @@ app:
       secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
       access-token-ttl-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_MINUTES:15}
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+    oauth:
+      google:
+        enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}
+        issuer: ${APP_SECURITY_OAUTH_GOOGLE_ISSUER:https://accounts.google.com}
+        jwk-set-uri: ${APP_SECURITY_OAUTH_GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+        audiences: ${APP_SECURITY_OAUTH_GOOGLE_AUDIENCES:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_GOOGLE_AUTO_PROVISION_USERS:true}
 
   cookies:
     refresh-name: ${APP_COOKIES_REFRESH_NAME:__Host-rt}
