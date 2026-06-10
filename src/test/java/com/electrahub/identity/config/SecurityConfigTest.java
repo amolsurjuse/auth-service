@@ -25,7 +25,11 @@ class SecurityConfigTest {
         LOGGER.info(" Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns");
         LOGGER.debug(" Entering SecurityConfigTest#corsConfigurationSourceUsesConfiguredOriginPatterns with debug context");
         CorsProperties corsProperties = new CorsProperties();
-        corsProperties.setAllowedOriginPatterns(List.of("http://localhost:4200", "https://*.electrahub.com"));
+        corsProperties.setAllowedOriginPatterns(List.of(
+                "http://localhost:4200",
+                "https://*.electrahub.com",
+                "https://admin-dev.electrahub.net"
+        ));
         SecurityConfig config = new SecurityConfig(corsProperties);
 
         CorsConfigurationSource source = config.corsConfigurationSource();
@@ -34,7 +38,11 @@ class SecurityConfigTest {
         var cors = typed.getCorsConfigurations().get("/**");
         assertThat(cors).isNotNull();
         assertThat(cors.getAllowedOriginPatterns())
-                .containsExactly("http://localhost:4200", "https://*.electrahub.com");
+                .containsExactly(
+                        "http://localhost:4200",
+                        "https://*.electrahub.com",
+                        "https://admin-dev.electrahub.net"
+                );
         assertThat(cors.getAllowedMethods()).contains("GET", "POST", "OPTIONS");
         assertThat(cors.getAllowCredentials()).isTrue();
     }
