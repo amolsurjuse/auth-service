@@ -31,6 +31,7 @@ public class AuthService {
     private final TokenVersionService tokenVersionService;
 
     private final JwtService jwtService;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     private final long refreshTtlDays;
 
@@ -40,6 +41,7 @@ public class AuthService {
             RedisRefreshSessionStore refreshStore,
             TokenVersionService tokenVersionService,
             JwtService jwtService,
+            NotificationEventPublisher notificationEventPublisher,
             @Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
         this.userServiceClient = userServiceClient;
@@ -47,6 +49,7 @@ public class AuthService {
         this.refreshStore = refreshStore;
         this.tokenVersionService = tokenVersionService;
         this.jwtService = jwtService;
+        this.notificationEventPublisher = notificationEventPublisher;
         this.refreshTtlDays = refreshTtlDays;
     }
 
@@ -75,6 +78,7 @@ public class AuthService {
                     null,
                     null
             ));
+            notificationEventPublisher.publish("USER_ACCOUNT_CREATED", principal.userId(), principal.email(), java.util.Map.of("email", principal.email()));
             return issueTokens(principal, deviceId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {
@@ -96,6 +100,16 @@ public class AuthService {
                     phoneNumber,
                     addressDto
             ));
+            notificationEventPublisher.publish(
+                    "USER_ACCOUNT_CREATED",
+                    principal.userId(),
+                    principal.email(),
+                    java.util.Map.of(
+                            "email", principal.email(),
+                            "firstName", firstName == null ? "" : firstName,
+                            "lastName", lastName == null ? "" : lastName
+                    )
+            );
             return issueTokens(principal, deviceId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {

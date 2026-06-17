@@ -131,6 +131,7 @@ class AuthServiceTest {
                 refreshStore,
                 tokenVersionService,
                 jwtService,
+                mock(NotificationEventPublisher.class),
                 7
         );
 
@@ -193,6 +194,7 @@ class AuthServiceTest {
                 refreshStore,
                 tokenVersionService,
                 jwtService,
+                mock(NotificationEventPublisher.class),
                 7
         );
 
@@ -219,6 +221,7 @@ class AuthServiceTest {
                 mock(RedisRefreshSessionStore.class),
                 mock(TokenVersionService.class),
                 mock(JwtService.class),
+                mock(NotificationEventPublisher.class),
                 7
         );
     }

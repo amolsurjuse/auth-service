@@ -25,6 +25,7 @@ public class AuthController {
     private final CookieUtil cookieUtil;
     private final TokenDenylistService denylistService;
     private final TokenVersionService tokenVersionService;
+    private final PasswordResetService passwordResetService;
 
     private final long refreshTtlDays;
 
@@ -34,6 +35,7 @@ public class AuthController {
             CookieUtil cookieUtil,
             TokenDenylistService denylistService,
             TokenVersionService tokenVersionService,
+            PasswordResetService passwordResetService,
             @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
         this.authService = authService;
@@ -41,10 +43,12 @@ public class AuthController {
         this.cookieUtil = cookieUtil;
         this.denylistService = denylistService;
         this.tokenVersionService = tokenVersionService;
+        this.passwordResetService = passwordResetService;
         this.refreshTtlDays = refreshTtlDays;
     }
 
     public record AccessTokenResponse(String accessToken, String tokenType) {}
+    public record AcceptedResponse(String status, String message) {}
 
     @PostMapping("/oauth/google")
     public ResponseEntity<AccessTokenResponse> googleLogin(
@@ -100,6 +104,21 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
                 .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<AcceptedResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        passwordResetService.requestReset(req.email());
+        return ResponseEntity.accepted().body(new AcceptedResponse(
+                "ACCEPTED",
+                "If the account exists, a password reset link will be sent."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<AcceptedResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        passwordResetService.resetPassword(req.token(), req.newPassword());
+        return ResponseEntity.ok(new AcceptedResponse("OK", "Password has been reset."));
     }
 
     /**

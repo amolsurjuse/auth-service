@@ -84,6 +84,21 @@ public class UserServiceClient {
                 .body(UserPrincipal.class);
     }
 
+    public UserPrincipal getPrincipalByEmail(String email) {
+        return restClient.get()
+                .uri("/api/internal/users/by-email/{email}/principal", email)
+                .retrieve()
+                .body(UserPrincipal.class);
+    }
+
+    public void resetPassword(UUID userId, ResetPasswordRequest request) {
+        restClient.post()
+                .uri("/api/internal/users/{userId}/password/reset", userId)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
     /**
      * Retrieves list countries for `UserServiceClient`.
      *
@@ -110,6 +125,9 @@ public class UserServiceClient {
     }
 
     public record AuthenticateUserRequest(String email, String password) {
+    }
+
+    public record ResetPasswordRequest(String newPassword) {
     }
 
     public record UserPrincipal(UUID userId, String email, boolean enabled, boolean pendingDeletion, List<String> roles) {
