@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +36,12 @@ public class GlobalExceptionHandler {
                 .map(e -> e.getDefaultMessage())
                 .orElse("Validation error");
         return build(HttpStatus.BAD_REQUEST, msg, req);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        LOGGER.warn("Malformed request body while processing {} {}: {}", req.getMethod(), req.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "Malformed JSON request body", req);
     }
 
     /**
