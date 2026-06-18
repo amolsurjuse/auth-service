@@ -5,10 +5,11 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,7 +21,6 @@ public class RedisRefreshSessionStore {
     public record RefreshSessionView(UUID userId, String deviceId, UUID sessionId, OffsetDateTime expiresAt) {}
 
     private final StringRedisTemplate redis;
-    private final ObjectMapper om;
 
     private final String rtPrefix;
     private final String rtuPrefix;
@@ -28,13 +28,11 @@ public class RedisRefreshSessionStore {
 
     public RedisRefreshSessionStore(
             StringRedisTemplate redis,
-            ObjectMapper om,
             @Value("${app.redis.refresh-prefix}") String rtPrefix,
             @Value("${app.redis.refresh-user-prefix}") String rtuPrefix,
             @Value("${app.redis.refresh-device-prefix}") String rtdPrefix
     ) {
         this.redis = redis;
-        this.om = om;
         this.rtPrefix = rtPrefix;
         this.rtuPrefix = rtuPrefix;
         this.rtdPrefix = rtdPrefix;
@@ -53,7 +51,7 @@ public class RedisRefreshSessionStore {
         LOGGER.info(" Entering RedisRefreshSessionStore#put");
         LOGGER.debug(" Entering RedisRefreshSessionStore#put with debug context");
         try {
-            redis.opsForValue().set(rtPrefix + refreshHash, om.writeValueAsString(view), ttl);
+            redis.opsForValue().set(rtPrefix + refreshHash, serialize(view), ttl);
 
             redis.opsForSet().add(rtuPrefix + view.userId(), refreshHash);
             redis.opsForSet().add(rtdPrefix + view.userId() + ":" + view.deviceId(), refreshHash);
@@ -76,7 +74,7 @@ public class RedisRefreshSessionStore {
     public RefreshSessionView getIfPresent(String refreshHash) {
         try {
             String v = redis.opsForValue().get(rtPrefix + refreshHash);
-            return (v == null) ? null : om.readValue(v, RefreshSessionView.class);
+            return (v == null) ? null : deserialize(v);
         } catch (Exception e) {
             throw new IllegalStateException("Redis refresh session read failed", e);
         }
@@ -123,5 +121,35 @@ public class RedisRefreshSessionStore {
         Set<String> hashes = redis.opsForSet().members(setKey);
         if (hashes != null) for (String h : hashes) redis.delete(rtPrefix + h);
         redis.delete(setKey);
+    }
+
+    private String serialize(RefreshSessionView view) {
+        return String.join("|",
+                view.userId().toString(),
+                escape(view.deviceId()),
+                view.sessionId().toString(),
+                String.valueOf(view.expiresAt().toInstant().toEpochMilli())
+        );
+    }
+
+    private RefreshSessionView deserialize(String value) {
+        String[] parts = value.split("\\|", -1);
+        if (parts.length != 4) {
+            throw new IllegalArgumentException("Invalid refresh session payload");
+        }
+        return new RefreshSessionView(
+                UUID.fromString(parts[0]),
+                unescape(parts[1]),
+                UUID.fromString(parts[2]),
+                OffsetDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(parts[3])), ZoneOffset.UTC)
+        );
+    }
+
+    private String escape(String value) {
+        return value.replace("%", "%25").replace("|", "%7C");
+    }
+
+    private String unescape(String value) {
+        return value.replace("%7C", "|").replace("%25", "%");
     }
 }
