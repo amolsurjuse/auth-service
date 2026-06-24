@@ -81,7 +81,7 @@ class AuthServiceTest {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         when(userServiceClient.authenticate(any()))
                 .thenReturn(new UserServiceClient.UserPrincipal(
-                        UUID.randomUUID(), "user@example.com", false, false, List.of("USER")));
+                        UUID.randomUUID(), "user@example.com", false, false, false, List.of("USER")));
 
         AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
 
@@ -95,7 +95,7 @@ class AuthServiceTest {
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         when(userServiceClient.authenticate(any()))
                 .thenReturn(new UserServiceClient.UserPrincipal(
-                        UUID.randomUUID(), "user@example.com", true, true, List.of("USER")));
+                        UUID.randomUUID(), "user@example.com", true, false, true, List.of("USER")));
 
         AuthService service = buildService(userServiceClient, mock(RefreshTokenRepository.class));
 
@@ -120,7 +120,7 @@ class AuthServiceTest {
 
         UUID userId = UUID.randomUUID();
         when(userServiceClient.register(any()))
-                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, List.of("USER")));
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(1L);
         when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -132,6 +132,7 @@ class AuthServiceTest {
                 tokenVersionService,
                 jwtService,
                 mock(NotificationEventPublisher.class),
+                mock(EmailVerificationService.class),
                 7
         );
 
@@ -183,7 +184,7 @@ class AuthServiceTest {
                 .thenReturn(new RedisRefreshSessionStore.RefreshSessionView(
                         userId, "device-1", current.getId(), current.getExpiresAt()));
         when(userServiceClient.getPrincipal(userId))
-                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, List.of("USER")));
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(2L);
         when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -195,6 +196,7 @@ class AuthServiceTest {
                 tokenVersionService,
                 jwtService,
                 mock(NotificationEventPublisher.class),
+                mock(EmailVerificationService.class),
                 7
         );
 
@@ -222,6 +224,7 @@ class AuthServiceTest {
                 mock(TokenVersionService.class),
                 mock(JwtService.class),
                 mock(NotificationEventPublisher.class),
+                mock(EmailVerificationService.class),
                 7
         );
     }

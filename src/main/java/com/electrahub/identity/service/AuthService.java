@@ -32,6 +32,7 @@ public class AuthService {
 
     private final JwtService jwtService;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final EmailVerificationService emailVerificationService;
 
     private final long refreshTtlDays;
 
@@ -42,6 +43,7 @@ public class AuthService {
             TokenVersionService tokenVersionService,
             JwtService jwtService,
             NotificationEventPublisher notificationEventPublisher,
+            EmailVerificationService emailVerificationService,
             @Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
         this.userServiceClient = userServiceClient;
@@ -50,6 +52,7 @@ public class AuthService {
         this.tokenVersionService = tokenVersionService;
         this.jwtService = jwtService;
         this.notificationEventPublisher = notificationEventPublisher;
+        this.emailVerificationService = emailVerificationService;
         this.refreshTtlDays = refreshTtlDays;
     }
 
@@ -79,6 +82,7 @@ public class AuthService {
                     null
             ));
             notificationEventPublisher.publish("USER_ACCOUNT_CREATED", principal.userId(), principal.email(), java.util.Map.of("email", principal.email()));
+            emailVerificationService.sendVerification(principal);
             return issueTokens(principal, deviceId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {
@@ -110,6 +114,7 @@ public class AuthService {
                             "lastName", lastName == null ? "" : lastName
                     )
             );
+            emailVerificationService.sendVerification(principal);
             return issueTokens(principal, deviceId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {

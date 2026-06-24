@@ -26,6 +26,7 @@ public class AuthController {
     private final TokenDenylistService denylistService;
     private final TokenVersionService tokenVersionService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
     private final long refreshTtlDays;
 
@@ -36,6 +37,7 @@ public class AuthController {
             TokenDenylistService denylistService,
             TokenVersionService tokenVersionService,
             PasswordResetService passwordResetService,
+            EmailVerificationService emailVerificationService,
             @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
     ) {
         this.authService = authService;
@@ -44,6 +46,7 @@ public class AuthController {
         this.denylistService = denylistService;
         this.tokenVersionService = tokenVersionService;
         this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
         this.refreshTtlDays = refreshTtlDays;
     }
 
@@ -106,6 +109,22 @@ public class AuthController {
                 .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
     }
 
+    @PostMapping("/oauth/facebook")
+    public ResponseEntity<AccessTokenResponse> facebookLogin(
+            @Valid @RequestBody SocialOAuthLoginRequest req,
+            @CookieValue(name = "did", required = false) String did
+    ) {
+        String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+
+        AuthService.TokenPair pair = oauthLoginService.loginWithFacebook(req.accessToken(), deviceId);
+        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<AcceptedResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         passwordResetService.requestReset(req.email());
@@ -119,6 +138,21 @@ public class AuthController {
     public ResponseEntity<AcceptedResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         passwordResetService.resetPassword(req.token(), req.newPassword());
         return ResponseEntity.ok(new AcceptedResponse("OK", "Password has been reset."));
+    }
+
+    @PostMapping("/email-verification/verify")
+    public ResponseEntity<AcceptedResponse> verifyEmail(@Valid @RequestBody EmailVerificationRequest req) {
+        emailVerificationService.verify(req.token());
+        return ResponseEntity.ok(new AcceptedResponse("OK", "Email address has been verified."));
+    }
+
+    @PostMapping("/email-verification/resend")
+    public ResponseEntity<AcceptedResponse> resendEmailVerification(@Valid @RequestBody ResendEmailVerificationRequest req) {
+        emailVerificationService.resend(req.email());
+        return ResponseEntity.accepted().body(new AcceptedResponse(
+                "ACCEPTED",
+                "If the account exists and is not verified, a verification email will be sent."
+        ));
     }
 
     /**

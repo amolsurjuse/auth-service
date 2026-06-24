@@ -99,6 +99,13 @@ public class UserServiceClient {
                 .toBodilessEntity();
     }
 
+    public UserPrincipal markEmailVerified(UUID userId) {
+        return restClient.post()
+                .uri("/api/internal/users/{userId}/email/verify", userId)
+                .retrieve()
+                .body(UserPrincipal.class);
+    }
+
     /**
      * Retrieves list countries for `UserServiceClient`.
      *
@@ -130,7 +137,7 @@ public class UserServiceClient {
     public record ResetPasswordRequest(String newPassword) {
     }
 
-    public record UserPrincipal(UUID userId, String email, boolean enabled, boolean pendingDeletion, List<String> roles) {
+    public record UserPrincipal(UUID userId, String email, boolean enabled, boolean emailVerified, boolean pendingDeletion, List<String> roles) {
     }
 
     public record CountryView(String code, String name, String dialCode) {

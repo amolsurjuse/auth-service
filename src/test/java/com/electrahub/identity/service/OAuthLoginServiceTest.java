@@ -33,23 +33,27 @@ class OAuthLoginServiceTest {
         UUID userId = UUID.randomUUID();
         OAuthIdentity identity = identity(userId);
         UserServiceClient.UserPrincipal principal = new UserServiceClient.UserPrincipal(
-                userId, "driver@example.com", true, false, List.of("USER"));
+                userId, "driver@example.com", true, false, false, List.of("USER"));
+        UserServiceClient.UserPrincipal verifiedPrincipal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, true, false, List.of("USER"));
 
         when(verifier.verify("id-token", "nonce")).thenReturn(googlePrincipal());
         when(identityRepository.findByProviderAndProviderSubject("GOOGLE", "google-subject"))
                 .thenReturn(Optional.of(identity));
         when(identityRepository.save(identity)).thenReturn(identity);
         when(userServiceClient.getPrincipal(userId)).thenReturn(principal);
-        when(authService.issueTokensForPrincipal(principal, "device-1"))
+        when(userServiceClient.markEmailVerified(userId)).thenReturn(verifiedPrincipal);
+        when(authService.issueTokensForPrincipal(verifiedPrincipal, "device-1"))
                 .thenReturn(new AuthService.TokenPair("access", "refresh"));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
 
         AuthService.TokenPair pair = service.loginWithGoogle("id-token", "nonce", "device-1");
 
         assertThat(pair.accessToken()).isEqualTo("access");
         verify(userServiceClient, never()).register(any());
+        verify(userServiceClient).markEmailVerified(userId);
         verify(identityRepository).save(identity);
     }
 
@@ -62,7 +66,9 @@ class OAuthLoginServiceTest {
 
         UUID userId = UUID.randomUUID();
         UserServiceClient.UserPrincipal principal = new UserServiceClient.UserPrincipal(
-                userId, "driver@example.com", true, false, List.of("USER"));
+                userId, "driver@example.com", true, false, false, List.of("USER"));
+        UserServiceClient.UserPrincipal verifiedPrincipal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, true, false, List.of("USER"));
 
         when(verifier.verify("id-token", null)).thenReturn(googlePrincipal());
         when(identityRepository.findByProviderAndProviderSubject("GOOGLE", "google-subject"))
@@ -70,17 +76,19 @@ class OAuthLoginServiceTest {
         when(userServiceClient.register(any())).thenReturn(principal);
         when(identityRepository.save(any(OAuthIdentity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userServiceClient.getPrincipal(userId)).thenReturn(principal);
-        when(authService.issueTokensForPrincipal(principal, "device-1"))
+        when(userServiceClient.markEmailVerified(userId)).thenReturn(verifiedPrincipal);
+        when(authService.issueTokensForPrincipal(verifiedPrincipal, "device-1"))
                 .thenReturn(new AuthService.TokenPair("access", "refresh"));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
 
         AuthService.TokenPair pair = service.loginWithGoogle("id-token", null, "device-1");
 
         assertThat(pair.refreshToken()).isEqualTo("refresh");
         verify(userServiceClient).register(any(UserServiceClient.RegisterUserRequest.class));
-        verify(authService).issueTokensForPrincipal(principal, "device-1");
+        verify(userServiceClient).markEmailVerified(userId);
+        verify(authService).issueTokensForPrincipal(verifiedPrincipal, "device-1");
     }
 
     @Test
@@ -97,7 +105,7 @@ class OAuthLoginServiceTest {
                 .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
 
         assertThatThrownBy(() -> service.loginWithGoogle("id-token", null, "device-1"))
                 .isInstanceOf(ConflictException.class)
