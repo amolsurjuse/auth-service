@@ -259,10 +259,10 @@ public class AuthService {
     }
 
     private void assertLoginAllowed(UserServiceClient.UserPrincipal principal) {
-        if (!principal.enabled()) {
+        if (!principal.isEnabled()) {
             throw new DisabledException("User is disabled");
         }
-        if (principal.pendingDeletion()) {
+        if (principal.isPendingDeletion()) {
             throw new DisabledException("User account is pending deletion");
         }
     }

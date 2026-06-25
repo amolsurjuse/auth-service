@@ -51,7 +51,7 @@ public class OAuthLoginService {
                 .orElseGet(() -> createIdentity(googlePrincipal));
 
         UserServiceClient.UserPrincipal principal = userServiceClient.getPrincipal(identity.getUserId());
-        if (googlePrincipal.emailVerified() && !principal.emailVerified()) {
+        if (googlePrincipal.emailVerified() && !principal.isEmailVerified()) {
             principal = userServiceClient.markEmailVerified(principal.userId());
         }
         return authService.issueTokensForPrincipal(principal, deviceId);
@@ -66,7 +66,7 @@ public class OAuthLoginService {
                 .orElseGet(() -> createIdentity(facebookPrincipal));
 
         UserServiceClient.UserPrincipal principal = userServiceClient.getPrincipal(identity.getUserId());
-        if (facebookPrincipal.emailVerified() && !principal.emailVerified()) {
+        if (facebookPrincipal.emailVerified() && !principal.isEmailVerified()) {
             principal = userServiceClient.markEmailVerified(principal.userId());
         }
         return authService.issueTokensForPrincipal(principal, deviceId);

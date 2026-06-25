@@ -137,7 +137,18 @@ public class UserServiceClient {
     public record ResetPasswordRequest(String newPassword) {
     }
 
-    public record UserPrincipal(UUID userId, String email, boolean enabled, boolean emailVerified, boolean pendingDeletion, List<String> roles) {
+    public record UserPrincipal(UUID userId, String email, Boolean enabled, Boolean emailVerified, Boolean pendingDeletion, List<String> roles) {
+        public boolean isEnabled() {
+            return enabled == null || enabled;
+        }
+
+        public boolean isEmailVerified() {
+            return Boolean.TRUE.equals(emailVerified);
+        }
+
+        public boolean isPendingDeletion() {
+            return Boolean.TRUE.equals(pendingDeletion);
+        }
     }
 
     public record CountryView(String code, String name, String dialCode) {

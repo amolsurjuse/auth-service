@@ -37,7 +37,7 @@ public class EmailVerificationService {
 
     @Transactional
     public void sendVerification(UserServiceClient.UserPrincipal principal) {
-        if (principal == null || principal.emailVerified()) {
+        if (principal == null || principal.isEmailVerified()) {
             return;
         }
         String token = UUID.randomUUID() + "." + UUID.randomUUID();
