@@ -37,7 +37,7 @@ public class AuthService {
     private final Duration defaultRefreshTtl;
     private final Duration refreshRotationGrace;
 
-    public AuthService(
+    AuthService(
             UserServiceClient userServiceClient,
             RefreshTokenRepository refreshTokenRepository,
             RedisRefreshSessionStore refreshStore,

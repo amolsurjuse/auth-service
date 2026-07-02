@@ -31,7 +31,7 @@ public class AuthController {
     private final long refreshTtlDays;
     private final long webRefreshTtlHours;
 
-    public AuthController(
+    AuthController(
             AuthService authService,
             OAuthLoginService oauthLoginService,
             CookieUtil cookieUtil,
