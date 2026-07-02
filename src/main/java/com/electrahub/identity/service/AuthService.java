@@ -34,7 +34,8 @@ public class AuthService {
     private final NotificationEventPublisher notificationEventPublisher;
     private final EmailVerificationService emailVerificationService;
 
-    private final long refreshTtlDays;
+    private final Duration defaultRefreshTtl;
+    private final Duration refreshRotationGrace;
 
     public AuthService(
             UserServiceClient userServiceClient,
@@ -44,7 +45,31 @@ public class AuthService {
             JwtService jwtService,
             NotificationEventPublisher notificationEventPublisher,
             EmailVerificationService emailVerificationService,
-            @Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
+            long refreshTtlDays
+    ) {
+        this(
+                userServiceClient,
+                refreshTokenRepository,
+                refreshStore,
+                tokenVersionService,
+                jwtService,
+                notificationEventPublisher,
+                emailVerificationService,
+                refreshTtlDays,
+                60
+        );
+    }
+
+    public AuthService(
+            UserServiceClient userServiceClient,
+            RefreshTokenRepository refreshTokenRepository,
+            RedisRefreshSessionStore refreshStore,
+            TokenVersionService tokenVersionService,
+            JwtService jwtService,
+            NotificationEventPublisher notificationEventPublisher,
+            EmailVerificationService emailVerificationService,
+            @Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays,
+            @Value("${app.security.jwt.refresh-token-rotation-grace-seconds:60}") long refreshRotationGraceSeconds
     ) {
         this.userServiceClient = userServiceClient;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -53,7 +78,8 @@ public class AuthService {
         this.jwtService = jwtService;
         this.notificationEventPublisher = notificationEventPublisher;
         this.emailVerificationService = emailVerificationService;
-        this.refreshTtlDays = refreshTtlDays;
+        this.defaultRefreshTtl = Duration.ofDays(refreshTtlDays);
+        this.refreshRotationGrace = Duration.ofSeconds(Math.max(0, refreshRotationGraceSeconds));
     }
 
     public record TokenPair(String accessToken, String refreshToken) {}
@@ -83,7 +109,7 @@ public class AuthService {
             ));
             notificationEventPublisher.publish("USER_ACCOUNT_CREATED", principal.userId(), principal.email(), java.util.Map.of("email", principal.email()));
             emailVerificationService.sendVerification(principal);
-            return issueTokens(principal, deviceId);
+            return issueTokens(principal, deviceId, defaultRefreshTtl);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {
                 throw new IllegalArgumentException("Email already registered");
@@ -95,6 +121,13 @@ public class AuthService {
     @Transactional
     public TokenPair register(String email, String rawPassword, String deviceId,
                               String firstName, String lastName, String phoneNumber, AddressDto addressDto) {
+        return register(email, rawPassword, deviceId, firstName, lastName, phoneNumber, addressDto, defaultRefreshTtl);
+    }
+
+    @Transactional
+    public TokenPair register(String email, String rawPassword, String deviceId,
+                              String firstName, String lastName, String phoneNumber, AddressDto addressDto,
+                              Duration refreshTtl) {
         try {
             var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
                     email,
@@ -115,7 +148,7 @@ public class AuthService {
                     )
             );
             emailVerificationService.sendVerification(principal);
-            return issueTokens(principal, deviceId);
+            return issueTokens(principal, deviceId, refreshTtl);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {
                 throw new IllegalArgumentException("Email already registered");
@@ -136,10 +169,15 @@ public class AuthService {
      */
     @Transactional
     public TokenPair login(String email, String rawPassword, String deviceId) {
+        return login(email, rawPassword, deviceId, defaultRefreshTtl);
+    }
+
+    @Transactional
+    public TokenPair login(String email, String rawPassword, String deviceId, Duration refreshTtl) {
         try {
             var principal = userServiceClient.authenticate(new UserServiceClient.AuthenticateUserRequest(email, rawPassword));
             assertLoginAllowed(principal);
-            return issueTokens(principal, deviceId);
+            return issueTokens(principal, deviceId, refreshTtl);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 401) {
                 throw new BadCredentialsException("Invalid credentials");
@@ -159,6 +197,11 @@ public class AuthService {
      */
     @Transactional
     public TokenPair refresh(String refreshPlain, String deviceId) {
+        return refresh(refreshPlain, deviceId, defaultRefreshTtl);
+    }
+
+    @Transactional
+    public TokenPair refresh(String refreshPlain, String deviceId, Duration refreshTtl) {
         String hash = sha256Hex(refreshPlain);
 
         // Fast-path: Redis view (device binding)
@@ -167,10 +210,15 @@ public class AuthService {
         RefreshToken db = refreshTokenRepository.findByTokenHash(hash)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
-        if (db.isRevoked() || db.isExpiredNow()) {
+        if (db.isExpiredNow()) {
             // cleanup best-effort
             refreshStore.delete(hash, db.getUserId(), db.getDeviceId());
-            throw new IllegalArgumentException("Refresh token expired or revoked");
+            throw new IllegalArgumentException("Refresh token expired");
+        }
+
+        if (db.isRevoked()) {
+            return refreshRecentlyRotatedToken(db, deviceId, refreshTtl)
+                    .orElseThrow(() -> new IllegalArgumentException("Refresh token revoked"));
         }
 
         // Device binding check
@@ -188,7 +236,33 @@ public class AuthService {
 
         var principal = userServiceClient.getPrincipal(db.getUserId());
         assertLoginAllowed(principal);
-        return issueTokens(principal, deviceId);
+        return issueTokens(principal, deviceId, refreshTtl);
+    }
+
+    private java.util.Optional<TokenPair> refreshRecentlyRotatedToken(RefreshToken revokedToken, String deviceId, Duration refreshTtl) {
+        if (refreshRotationGrace.isZero() || !revokedToken.getDeviceId().equals(deviceId)) {
+            return java.util.Optional.empty();
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime graceStartedAt = now.minus(refreshRotationGrace);
+        return refreshTokenRepository
+                .findTopByUserIdAndDeviceIdAndRevokedFalseOrderByCreatedAtDesc(revokedToken.getUserId(), deviceId)
+                .filter(activeToken -> activeToken.getCreatedAt().isAfter(revokedToken.getCreatedAt()))
+                .filter(activeToken -> activeToken.getCreatedAt().isAfter(graceStartedAt))
+                .map(activeToken -> {
+                    LOGGER.info(
+                            "Refresh token accepted within rotation grace userId={} deviceId={} activeTokenId={}",
+                            revokedToken.getUserId(),
+                            deviceId,
+                            activeToken.getId()
+                    );
+                    activeToken.revoke();
+                    refreshStore.delete(activeToken.getTokenHash(), activeToken.getUserId(), deviceId);
+                    var principal = userServiceClient.getPrincipal(revokedToken.getUserId());
+                    assertLoginAllowed(principal);
+                    return issueTokens(principal, deviceId, refreshTtl);
+                });
     }
 
     @Transactional
@@ -198,8 +272,19 @@ public class AuthService {
             String fallbackRefreshPlain,
             String fallbackDeviceId
     ) {
+        return refreshWithFallback(primaryRefreshPlain, primaryDeviceId, fallbackRefreshPlain, fallbackDeviceId, defaultRefreshTtl);
+    }
+
+    @Transactional
+    public TokenPair refreshWithFallback(
+            String primaryRefreshPlain,
+            String primaryDeviceId,
+            String fallbackRefreshPlain,
+            String fallbackDeviceId,
+            Duration refreshTtl
+    ) {
         try {
-            return refresh(primaryRefreshPlain, primaryDeviceId);
+            return refresh(primaryRefreshPlain, primaryDeviceId, refreshTtl);
         } catch (IllegalArgumentException primaryFailure) {
             if (!hasText(fallbackRefreshPlain)
                     || !hasText(fallbackDeviceId)
@@ -210,7 +295,7 @@ public class AuthService {
 
             LOGGER.warn("Refresh token rejected source=primary reason={}; trying fallback source", primaryFailure.getMessage());
             try {
-                return refresh(fallbackRefreshPlain, fallbackDeviceId);
+                return refresh(fallbackRefreshPlain, fallbackDeviceId, refreshTtl);
             } catch (IllegalArgumentException fallbackFailure) {
                 LOGGER.warn("Refresh token rejected source=fallback reason={}", fallbackFailure.getMessage());
                 throw new BadCredentialsException("Invalid refresh token", fallbackFailure);
@@ -258,11 +343,16 @@ public class AuthService {
      */
     @Transactional
     public TokenPair issueTokensForPrincipal(UserServiceClient.UserPrincipal principal, String deviceId) {
-        assertLoginAllowed(principal);
-        return issueTokens(principal, deviceId);
+        return issueTokensForPrincipal(principal, deviceId, defaultRefreshTtl);
     }
 
-    private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId) {
+    @Transactional
+    public TokenPair issueTokensForPrincipal(UserServiceClient.UserPrincipal principal, String deviceId, Duration refreshTtl) {
+        assertLoginAllowed(principal);
+        return issueTokens(principal, deviceId, refreshTtl);
+    }
+
+    private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId, Duration refreshTtl) {
         long tv = tokenVersionService.getVersion(principal.userId());
         String access = jwtService.generateAccessToken(principal.email(), principal.userId().toString(), tv, principal.roles());
 
@@ -270,8 +360,10 @@ public class AuthService {
         String refreshHash = sha256Hex(refreshPlain);
 
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime exp = now.plusDays(refreshTtlDays);
-        Duration ttl = Duration.ofDays(refreshTtlDays);
+        Duration ttl = refreshTtl == null || refreshTtl.isNegative() || refreshTtl.isZero()
+                ? defaultRefreshTtl
+                : refreshTtl;
+        OffsetDateTime exp = now.plus(ttl);
 
         RefreshToken rt = new RefreshToken(UUID.randomUUID(), principal.userId(), deviceId, refreshHash, exp, now);
         refreshTokenRepository.save(rt);

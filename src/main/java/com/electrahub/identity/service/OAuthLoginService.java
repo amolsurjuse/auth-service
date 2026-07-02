@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -44,6 +45,11 @@ public class OAuthLoginService {
 
     @Transactional
     public AuthService.TokenPair loginWithGoogle(String idToken, String nonce, String deviceId) {
+        return loginWithGoogle(idToken, nonce, deviceId, null);
+    }
+
+    @Transactional
+    public AuthService.TokenPair loginWithGoogle(String idToken, String nonce, String deviceId, Duration refreshTtl) {
         GoogleOidcPrincipal googlePrincipal = googleVerifier.verify(idToken, nonce);
         OAuthIdentity identity = identityRepository
                 .findByProviderAndProviderSubject(GOOGLE_PROVIDER, googlePrincipal.subject())
@@ -54,11 +60,18 @@ public class OAuthLoginService {
         if (googlePrincipal.emailVerified() && !principal.isEmailVerified()) {
             principal = userServiceClient.markEmailVerified(principal.userId());
         }
-        return authService.issueTokensForPrincipal(principal, deviceId);
+        return refreshTtl == null
+                ? authService.issueTokensForPrincipal(principal, deviceId)
+                : authService.issueTokensForPrincipal(principal, deviceId, refreshTtl);
     }
 
     @Transactional
     public AuthService.TokenPair loginWithFacebook(String accessToken, String deviceId) {
+        return loginWithFacebook(accessToken, deviceId, null);
+    }
+
+    @Transactional
+    public AuthService.TokenPair loginWithFacebook(String accessToken, String deviceId, Duration refreshTtl) {
         FacebookOAuthPrincipal facebookPrincipal = facebookVerifier.verify(accessToken);
         OAuthIdentity identity = identityRepository
                 .findByProviderAndProviderSubject(FACEBOOK_PROVIDER, facebookPrincipal.subject())
@@ -69,7 +82,9 @@ public class OAuthLoginService {
         if (facebookPrincipal.emailVerified() && !principal.isEmailVerified()) {
             principal = userServiceClient.markEmailVerified(principal.userId());
         }
-        return authService.issueTokensForPrincipal(principal, deviceId);
+        return refreshTtl == null
+                ? authService.issueTokensForPrincipal(principal, deviceId)
+                : authService.issueTokensForPrincipal(principal, deviceId, refreshTtl);
     }
 
     private OAuthIdentity updateExistingIdentity(OAuthIdentity identity, GoogleOidcPrincipal principal) {

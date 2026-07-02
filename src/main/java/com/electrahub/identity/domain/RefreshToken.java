@@ -50,6 +50,7 @@ public class RefreshToken {
     public String getDeviceId() { return deviceId; }
     public String getTokenHash() { return tokenHash; }
     public OffsetDateTime getExpiresAt() { return expiresAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
     public boolean isRevoked() { return revoked; }
 
     public void revoke() { this.revoked = true; }

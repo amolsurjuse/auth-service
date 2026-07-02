@@ -41,6 +41,8 @@ app:
   security:
     jwt:
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+      refresh-token-web-ttl-hours: ${APP_SECURITY_JWT_REFRESH_TOKEN_WEB_TTL_HOURS:24}
+      refresh-token-rotation-grace-seconds: ${APP_SECURITY_JWT_REFRESH_TOKEN_ROTATION_GRACE_SECONDS:60}
     oauth:
       google:
         enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}

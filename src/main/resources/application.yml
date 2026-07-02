@@ -87,6 +87,8 @@ app:
       secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
       access-token-ttl-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_MINUTES:15}
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+      refresh-token-web-ttl-hours: ${APP_SECURITY_JWT_REFRESH_TOKEN_WEB_TTL_HOURS:24}
+      refresh-token-rotation-grace-seconds: ${APP_SECURITY_JWT_REFRESH_TOKEN_ROTATION_GRACE_SECONDS:60}
     oauth:
       google:
         enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}

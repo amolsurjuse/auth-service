@@ -29,6 +29,7 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     private final long refreshTtlDays;
+    private final long webRefreshTtlHours;
 
     public AuthController(
             AuthService authService,
@@ -38,7 +39,31 @@ public class AuthController {
             TokenVersionService tokenVersionService,
             PasswordResetService passwordResetService,
             EmailVerificationService emailVerificationService,
-            @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays
+            long refreshTtlDays
+    ) {
+        this(
+                authService,
+                oauthLoginService,
+                cookieUtil,
+                denylistService,
+                tokenVersionService,
+                passwordResetService,
+                emailVerificationService,
+                refreshTtlDays,
+                24
+        );
+    }
+
+    public AuthController(
+            AuthService authService,
+            OAuthLoginService oauthLoginService,
+            CookieUtil cookieUtil,
+            TokenDenylistService denylistService,
+            TokenVersionService tokenVersionService,
+            PasswordResetService passwordResetService,
+            EmailVerificationService emailVerificationService,
+            @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-ttl-days}") long refreshTtlDays,
+            @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token-web-ttl-hours:24}") long webRefreshTtlHours
     ) {
         this.authService = authService;
         this.oauthLoginService = oauthLoginService;
@@ -48,6 +73,7 @@ public class AuthController {
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
         this.refreshTtlDays = refreshTtlDays;
+        this.webRefreshTtlHours = webRefreshTtlHours;
     }
 
     public record AccessTokenResponse(String accessToken, String tokenType, String refreshToken, String deviceId) {
@@ -61,13 +87,24 @@ public class AuthController {
     @PostMapping("/oauth/google")
     public ResponseEntity<AccessTokenResponse> googleLogin(
             @Valid @RequestBody GoogleOidcLoginRequest req,
-            @CookieValue(name = "did", required = false) String did
+            @CookieValue(name = "did", required = false) String did,
+            HttpServletRequest request
     ) {
         String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+        Duration refreshTtl = refreshTtlFor(request);
 
-        AuthService.TokenPair pair = oauthLoginService.loginWithGoogle(req.idToken(), req.nonce(), deviceId);
+        AuthService.TokenPair pair = oauthLoginService.loginWithGoogle(req.idToken(), req.nonce(), deviceId, refreshTtl);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    ResponseEntity<AccessTokenResponse> googleLogin(GoogleOidcLoginRequest req, String did) {
+        String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
         Duration refreshTtl = Duration.ofDays(refreshTtlDays);
-
+        AuthService.TokenPair pair = oauthLoginService.loginWithGoogle(req.idToken(), req.nonce(), deviceId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
@@ -77,10 +114,32 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AccessTokenResponse> register(
             @Valid @RequestBody RegisterRequest req,
-            @CookieValue(name = "did", required = false) String did
+            @CookieValue(name = "did", required = false) String did,
+            HttpServletRequest request
     ) {
         String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+        Duration refreshTtl = refreshTtlFor(request);
 
+        AuthService.TokenPair pair = authService.register(
+                req.email(),
+                req.password(),
+                deviceId,
+                req.firstName(),
+                req.lastName(),
+                req.phoneNumber(),
+                req.address(),
+                refreshTtl
+        );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    ResponseEntity<AccessTokenResponse> register(RegisterRequest req, String did) {
+        String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
         AuthService.TokenPair pair = authService.register(
                 req.email(),
                 req.password(),
@@ -90,8 +149,6 @@ public class AuthController {
                 req.phoneNumber(),
                 req.address()
         );
-        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
@@ -101,13 +158,24 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AccessTokenResponse> login(
             @Valid @RequestBody LoginRequest req,
-            @CookieValue(name = "did", required = false) String did
+            @CookieValue(name = "did", required = false) String did,
+            HttpServletRequest request
     ) {
         String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+        Duration refreshTtl = refreshTtlFor(request);
 
-        AuthService.TokenPair pair = authService.login(req.email(), req.password(), deviceId);
+        AuthService.TokenPair pair = authService.login(req.email(), req.password(), deviceId, refreshTtl);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    ResponseEntity<AccessTokenResponse> login(LoginRequest req, String did) {
+        String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
         Duration refreshTtl = Duration.ofDays(refreshTtlDays);
-
+        AuthService.TokenPair pair = authService.login(req.email(), req.password(), deviceId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
@@ -117,17 +185,22 @@ public class AuthController {
     @PostMapping("/oauth/facebook")
     public ResponseEntity<AccessTokenResponse> facebookLogin(
             @Valid @RequestBody SocialOAuthLoginRequest req,
-            @CookieValue(name = "did", required = false) String did
+            @CookieValue(name = "did", required = false) String did,
+            HttpServletRequest request
     ) {
         String deviceId = (did == null || did.isBlank()) ? UUID.randomUUID().toString() : did;
+        Duration refreshTtl = refreshTtlFor(request);
 
-        AuthService.TokenPair pair = oauthLoginService.loginWithFacebook(req.accessToken(), deviceId);
-        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
+        AuthService.TokenPair pair = oauthLoginService.loginWithFacebook(req.accessToken(), deviceId, refreshTtl);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
                 .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    ResponseEntity<AccessTokenResponse> facebookLogin(SocialOAuthLoginRequest req, String did) {
+        return facebookLogin(req, did, null);
     }
 
     @PostMapping("/forgot-password")
@@ -168,7 +241,8 @@ public class AuthController {
     public ResponseEntity<AccessTokenResponse> refresh(
             @CookieValue(name = "__Host-rt", required = false) String refreshCookie,
             @CookieValue(name = "did", required = false) String deviceCookie,
-            @RequestBody(required = false) RefreshRequest req
+            @RequestBody(required = false) RefreshRequest req,
+            HttpServletRequest request
     ) {
         String bodyRefreshToken = req == null ? null : req.refreshToken();
         String bodyDeviceId = req == null ? null : req.deviceId();
@@ -180,9 +254,27 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        AuthService.TokenPair pair = authService.refreshWithFallback(refreshToken, deviceId, refreshCookie, deviceCookie);
-        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
+        Duration refreshTtl = refreshTtlFor(request);
+        AuthService.TokenPair pair = authService.refreshWithFallback(refreshToken, deviceId, refreshCookie, deviceCookie, refreshTtl);
 
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    ResponseEntity<AccessTokenResponse> refresh(String refreshCookie, String deviceCookie, RefreshRequest req) {
+        String bodyRefreshToken = req == null ? null : req.refreshToken();
+        String bodyDeviceId = req == null ? null : req.deviceId();
+        String refreshToken = firstNonBlank(bodyRefreshToken, refreshCookie);
+        String deviceId = firstNonBlank(bodyDeviceId, deviceCookie);
+        if (refreshToken == null || deviceId == null) {
+            LOGGER.warn("Refresh request rejected: missing refresh token or device id bodyRefresh={} cookieRefresh={} bodyDevice={} cookieDevice={}",
+                    hasText(bodyRefreshToken), hasText(refreshCookie), hasText(bodyDeviceId), hasText(deviceCookie));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Duration refreshTtl = Duration.ofDays(refreshTtlDays);
+        AuthService.TokenPair pair = authService.refreshWithFallback(refreshToken, deviceId, refreshCookie, deviceCookie);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
                 .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
@@ -200,6 +292,38 @@ public class AuthController {
 
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private Duration refreshTtlFor(HttpServletRequest request) {
+        return isMobileClient(request)
+                ? Duration.ofDays(refreshTtlDays)
+                : Duration.ofHours(webRefreshTtlHours);
+    }
+
+    private static boolean isMobileClient(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        String clientType = request.getHeader("X-Client-Type");
+        if (clientType != null) {
+            String normalized = clientType.trim().toLowerCase(java.util.Locale.ROOT);
+            if (normalized.equals("ios") || normalized.equals("android") || normalized.equals("mobile")) {
+                return true;
+            }
+            if (normalized.equals("web") || normalized.equals("admin-web") || normalized.equals("driver-web")) {
+                return false;
+            }
+        }
+
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent == null) {
+            return false;
+        }
+        String normalizedUserAgent = userAgent.toLowerCase(java.util.Locale.ROOT);
+        return normalizedUserAgent.contains("iphone")
+                || normalizedUserAgent.contains("ipad")
+                || normalizedUserAgent.contains("android")
+                || normalizedUserAgent.contains("mobile");
     }
 
     /**
