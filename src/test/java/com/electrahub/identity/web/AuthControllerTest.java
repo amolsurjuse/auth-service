@@ -146,7 +146,7 @@ class AuthControllerTest {
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
-        when(authService.refresh("old-refresh", "device-1"))
+        when(authService.refreshWithFallback("old-refresh", "device-1", null, null))
                 .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
         when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
                 .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
@@ -167,14 +167,14 @@ class AuthControllerTest {
     }
 
     @Test
-    void refreshPrefersNativeBodyWhenStaleCookiesAreAlsoPresent() {
+    void refreshUsesNativeBodyWithCookieFallbackWhenBothArePresent() {
         AuthService authService = mock(AuthService.class);
         OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
-        when(authService.refresh("fresh-native-refresh", "fresh-device"))
+        when(authService.refreshWithFallback("fresh-native-refresh", "fresh-device", "fallback-cookie-refresh", "fallback-device"))
                 .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
         when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
                 .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
@@ -182,8 +182,8 @@ class AuthControllerTest {
         AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 30);
 
         ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(
-                "stale-cookie-refresh",
-                "stale-device",
+                "fallback-cookie-refresh",
+                "fallback-device",
                 new AuthController.RefreshRequest("fresh-native-refresh", "fresh-device")
         );
 
@@ -192,8 +192,7 @@ class AuthControllerTest {
         assertThat(response.getBody().accessToken()).isEqualTo("new-access");
         assertThat(response.getBody().refreshToken()).isEqualTo("new-refresh");
         assertThat(response.getBody().deviceId()).isEqualTo("fresh-device");
-        verify(authService).refresh("fresh-native-refresh", "fresh-device");
-        verify(authService, never()).refresh("stale-cookie-refresh", "stale-device");
+        verify(authService).refreshWithFallback("fresh-native-refresh", "fresh-device", "fallback-cookie-refresh", "fallback-device");
     }
 
     /**

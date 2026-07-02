@@ -170,13 +170,17 @@ public class AuthController {
             @CookieValue(name = "did", required = false) String deviceCookie,
             @RequestBody(required = false) RefreshRequest req
     ) {
-        String refreshToken = firstNonBlank(req == null ? null : req.refreshToken(), refreshCookie);
-        String deviceId = firstNonBlank(req == null ? null : req.deviceId(), deviceCookie);
+        String bodyRefreshToken = req == null ? null : req.refreshToken();
+        String bodyDeviceId = req == null ? null : req.deviceId();
+        String refreshToken = firstNonBlank(bodyRefreshToken, refreshCookie);
+        String deviceId = firstNonBlank(bodyDeviceId, deviceCookie);
         if (refreshToken == null || deviceId == null) {
+            LOGGER.warn("Refresh request rejected: missing refresh token or device id bodyRefresh={} cookieRefresh={} bodyDevice={} cookieDevice={}",
+                    hasText(bodyRefreshToken), hasText(refreshCookie), hasText(bodyDeviceId), hasText(deviceCookie));
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        AuthService.TokenPair pair = authService.refresh(refreshToken, deviceId);
+        AuthService.TokenPair pair = authService.refreshWithFallback(refreshToken, deviceId, refreshCookie, deviceCookie);
         Duration refreshTtl = Duration.ofDays(refreshTtlDays);
 
         return ResponseEntity.ok()
@@ -192,6 +196,10 @@ public class AuthController {
             return fallback;
         }
         return null;
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**

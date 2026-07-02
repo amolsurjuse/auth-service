@@ -191,6 +191,33 @@ public class AuthService {
         return issueTokens(principal, deviceId);
     }
 
+    @Transactional
+    public TokenPair refreshWithFallback(
+            String primaryRefreshPlain,
+            String primaryDeviceId,
+            String fallbackRefreshPlain,
+            String fallbackDeviceId
+    ) {
+        try {
+            return refresh(primaryRefreshPlain, primaryDeviceId);
+        } catch (IllegalArgumentException primaryFailure) {
+            if (!hasText(fallbackRefreshPlain)
+                    || !hasText(fallbackDeviceId)
+                    || sameRefreshAttempt(primaryRefreshPlain, primaryDeviceId, fallbackRefreshPlain, fallbackDeviceId)) {
+                LOGGER.warn("Refresh token rejected source=primary reason={}", primaryFailure.getMessage());
+                throw new BadCredentialsException("Invalid refresh token", primaryFailure);
+            }
+
+            LOGGER.warn("Refresh token rejected source=primary reason={}; trying fallback source", primaryFailure.getMessage());
+            try {
+                return refresh(fallbackRefreshPlain, fallbackDeviceId);
+            } catch (IllegalArgumentException fallbackFailure) {
+                LOGGER.warn("Refresh token rejected source=fallback reason={}", fallbackFailure.getMessage());
+                throw new BadCredentialsException("Invalid refresh token", fallbackFailure);
+            }
+        }
+    }
+
     /**
      * Executes revoke refresh for user device for `AuthService`.
      *
@@ -265,6 +292,15 @@ public class AuthService {
         if (principal.isPendingDeletion()) {
             throw new DisabledException("User account is pending deletion");
         }
+    }
+
+    private static boolean sameRefreshAttempt(String leftRefreshPlain, String leftDeviceId, String rightRefreshPlain, String rightDeviceId) {
+        return java.util.Objects.equals(leftRefreshPlain, rightRefreshPlain)
+                && java.util.Objects.equals(leftDeviceId, rightDeviceId);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**

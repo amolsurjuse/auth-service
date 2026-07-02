@@ -207,6 +207,63 @@ class AuthServiceTest {
         assertThat(current.isRevoked()).isTrue();
     }
 
+    @Test
+    void refreshWithFallbackUsesCookieTokenWhenNativeBodyTokenIsStale() {
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
+        RedisRefreshSessionStore refreshStore = mock(RedisRefreshSessionStore.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+        JwtService jwtService = mock(JwtService.class);
+
+        UUID userId = UUID.randomUUID();
+        String staleBodyRefresh = "stale-body-refresh";
+        String freshCookieRefresh = "fresh-cookie-refresh";
+        String staleHash = sha256Hex(staleBodyRefresh);
+        String freshHash = sha256Hex(freshCookieRefresh);
+
+        RefreshToken fresh = new RefreshToken(
+                UUID.randomUUID(),
+                userId,
+                "device-1",
+                freshHash,
+                OffsetDateTime.now().plusDays(1),
+                OffsetDateTime.now()
+        );
+
+        when(refreshTokenRepository.findByTokenHash(staleHash)).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHash(freshHash)).thenReturn(Optional.of(fresh));
+        when(refreshStore.getIfPresent(freshHash))
+                .thenReturn(new RedisRefreshSessionStore.RefreshSessionView(
+                        userId, "device-1", fresh.getId(), fresh.getExpiresAt()));
+        when(userServiceClient.getPrincipal(userId))
+                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
+        when(tokenVersionService.getVersion(userId)).thenReturn(2L);
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
+        when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthService service = new AuthService(
+                userServiceClient,
+                refreshTokenRepository,
+                refreshStore,
+                tokenVersionService,
+                jwtService,
+                mock(NotificationEventPublisher.class),
+                mock(EmailVerificationService.class),
+                7
+        );
+
+        AuthService.TokenPair rotated = service.refreshWithFallback(
+                staleBodyRefresh,
+                "device-1",
+                freshCookieRefresh,
+                "device-1"
+        );
+
+        assertThat(rotated.accessToken()).isEqualTo("access-token");
+        assertThat(fresh.isRevoked()).isTrue();
+        verify(refreshStore).delete(freshHash, userId, "device-1");
+    }
+
     /**
      * Creates build service for `AuthServiceTest`.
      *
