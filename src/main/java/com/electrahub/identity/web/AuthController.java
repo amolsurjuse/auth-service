@@ -54,6 +54,7 @@ public class AuthController {
         );
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AuthController(
             AuthService authService,
             OAuthLoginService oauthLoginService,

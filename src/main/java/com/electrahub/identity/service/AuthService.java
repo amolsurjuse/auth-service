@@ -60,6 +60,7 @@ public class AuthService {
         );
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AuthService(
             UserServiceClient userServiceClient,
             RefreshTokenRepository refreshTokenRepository,
