@@ -133,9 +133,37 @@ class AuthControllerTest {
 
         AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
 
-        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(null, null);
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(null, null, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void refreshAcceptsNativeBodyWhenCookiesAreMissing() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(authService.refresh("old-refresh", "device-1"))
+                .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
+        when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
+                .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 30);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(
+                null,
+                null,
+                new AuthController.RefreshRequest("old-refresh", "device-1")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("new-access");
+        assertThat(response.getBody().refreshToken()).isEqualTo("new-refresh");
+        assertThat(response.getBody().deviceId()).isEqualTo("device-1");
     }
 
     /**

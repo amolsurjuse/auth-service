@@ -50,7 +50,12 @@ public class AuthController {
         this.refreshTtlDays = refreshTtlDays;
     }
 
-    public record AccessTokenResponse(String accessToken, String tokenType) {}
+    public record AccessTokenResponse(String accessToken, String tokenType, String refreshToken, String deviceId) {
+        public AccessTokenResponse(String accessToken, String tokenType) {
+            this(accessToken, tokenType, null, null);
+        }
+    }
+    public record RefreshRequest(String refreshToken, String deviceId) {}
     public record AcceptedResponse(String status, String message) {}
 
     @PostMapping("/oauth/google")
@@ -66,7 +71,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
-                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
     }
 
     @PostMapping("/register")
@@ -90,7 +95,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
-                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
     }
 
     @PostMapping("/login")
@@ -106,7 +111,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
-                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
     }
 
     @PostMapping("/oauth/facebook")
@@ -122,7 +127,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildDeviceCookie(deviceId).toString())
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
-                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
     }
 
     @PostMapping("/forgot-password")
@@ -162,18 +167,31 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AccessTokenResponse> refresh(
             @CookieValue(name = "__Host-rt", required = false) String refreshCookie,
-            @CookieValue(name = "did", required = false) String deviceId
+            @CookieValue(name = "did", required = false) String deviceCookie,
+            @RequestBody(required = false) RefreshRequest req
     ) {
-        if (refreshCookie == null || refreshCookie.isBlank() || deviceId == null || deviceId.isBlank()) {
+        String refreshToken = firstNonBlank(refreshCookie, req == null ? null : req.refreshToken());
+        String deviceId = firstNonBlank(deviceCookie, req == null ? null : req.deviceId());
+        if (refreshToken == null || deviceId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        AuthService.TokenPair pair = authService.refresh(refreshCookie, deviceId);
+        AuthService.TokenPair pair = authService.refresh(refreshToken, deviceId);
         Duration refreshTtl = Duration.ofDays(refreshTtlDays);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshCookie(pair.refreshToken(), refreshTtl).toString())
-                .body(new AccessTokenResponse(pair.accessToken(), "Bearer"));
+                .body(new AccessTokenResponse(pair.accessToken(), "Bearer", pair.refreshToken(), deviceId));
+    }
+
+    private static String firstNonBlank(String preferred, String fallback) {
+        if (preferred != null && !preferred.isBlank()) {
+            return preferred;
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback;
+        }
+        return null;
     }
 
     /**
