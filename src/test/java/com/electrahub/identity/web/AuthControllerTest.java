@@ -166,6 +166,36 @@ class AuthControllerTest {
         assertThat(response.getBody().deviceId()).isEqualTo("device-1");
     }
 
+    @Test
+    void refreshPrefersNativeBodyWhenStaleCookiesAreAlsoPresent() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(authService.refresh("fresh-native-refresh", "fresh-device"))
+                .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
+        when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
+                .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 30);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(
+                "stale-cookie-refresh",
+                "stale-device",
+                new AuthController.RefreshRequest("fresh-native-refresh", "fresh-device")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("new-access");
+        assertThat(response.getBody().refreshToken()).isEqualTo("new-refresh");
+        assertThat(response.getBody().deviceId()).isEqualTo("fresh-device");
+        verify(authService).refresh("fresh-native-refresh", "fresh-device");
+        verify(authService, never()).refresh("stale-cookie-refresh", "stale-device");
+    }
+
     /**
      * Executes logout device revokes and clears cookie for `AuthControllerTest`.
      *

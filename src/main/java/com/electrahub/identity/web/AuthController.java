@@ -170,8 +170,8 @@ public class AuthController {
             @CookieValue(name = "did", required = false) String deviceCookie,
             @RequestBody(required = false) RefreshRequest req
     ) {
-        String refreshToken = firstNonBlank(refreshCookie, req == null ? null : req.refreshToken());
-        String deviceId = firstNonBlank(deviceCookie, req == null ? null : req.deviceId());
+        String refreshToken = firstNonBlank(req == null ? null : req.refreshToken(), refreshCookie);
+        String deviceId = firstNonBlank(req == null ? null : req.deviceId(), deviceCookie);
         if (refreshToken == null || deviceId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
