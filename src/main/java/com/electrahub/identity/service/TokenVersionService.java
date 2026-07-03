@@ -2,6 +2,7 @@ package com.electrahub.identity.service;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -22,15 +23,8 @@ public class TokenVersionService {
         this(redis, prefix, 35L);
     }
 
+    @Autowired
     public TokenVersionService(StringRedisTemplate redis,
-                               /**
-                                * Executes value for `TokenVersionService`.
-                                *
-                                * <p>Detailed behavior: follows the current implementation path and
-                                * enforces component-specific rules in `com.electrahub.identity.service`.
-                                * @param prefix input consumed by Value.
-                                * @return result produced by Value.
-                                */
                                @Value("${app.redis.token-version-prefix}") String prefix,
                                @Value("${app.redis.token-version-ttl-days:35}") long versionTtlDays) {
                                    LOGGER.info(" Entering TokenVersionService#Value");
