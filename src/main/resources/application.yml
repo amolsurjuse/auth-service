@@ -117,6 +117,7 @@ app:
     refresh-device-prefix: ${APP_REDIS_REFRESH_DEVICE_PREFIX:rtd:}
     denylist-prefix: ${APP_REDIS_DENYLIST_PREFIX:deny:jwt:}
     token-version-prefix: ${APP_REDIS_TOKEN_VERSION_PREFIX:tv:}
+    token-version-ttl-days: ${APP_REDIS_TOKEN_VERSION_TTL_DAYS:35}
     password-reset-prefix: ${APP_REDIS_PASSWORD_RESET_PREFIX:pr:}
     password-reset-ttl-minutes: ${APP_REDIS_PASSWORD_RESET_TTL_MINUTES:30}
 
