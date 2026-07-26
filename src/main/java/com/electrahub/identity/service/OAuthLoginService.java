@@ -177,7 +177,14 @@ public class OAuthLoginService {
     }
 
     private UserServiceClient.UserPrincipal registerNewUser(GoogleOidcPrincipal principal) {
-        return registerNewUser(principal.email(), principal.givenName(), principal.familyName());
+        try {
+            return registerNewUser(principal.email(), principal.givenName(), principal.familyName());
+        } catch (ConflictException ex) {
+            // Google has already verified ownership of this email. Link the Google
+            // subject to the existing ElectraHub account instead of requiring the
+            // user to sign in with a password before social login can succeed.
+            return userServiceClient.getPrincipalByEmail(principal.email());
+        }
     }
 
     private UserServiceClient.UserPrincipal registerNewUser(String email, String givenName, String familyName) {

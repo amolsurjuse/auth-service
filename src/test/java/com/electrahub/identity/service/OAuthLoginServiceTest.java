@@ -15,7 +15,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -92,26 +91,40 @@ class OAuthLoginServiceTest {
     }
 
     @Test
-    void googleLoginReturnsConflictWhenEmailAlreadyExistsWithoutLink() {
+    void googleLoginLinksExistingUserWhenEmailAlreadyExistsWithoutIdentity() {
         GoogleOidcTokenVerifier verifier = mock(GoogleOidcTokenVerifier.class);
         OAuthIdentityRepository identityRepository = mock(OAuthIdentityRepository.class);
         UserServiceClient userServiceClient = mock(UserServiceClient.class);
         AuthService authService = mock(AuthService.class);
+
+        UUID userId = UUID.randomUUID();
+        UserServiceClient.UserPrincipal principal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, false, false, List.of("USER"));
+        UserServiceClient.UserPrincipal verifiedPrincipal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, true, false, List.of("USER"));
 
         when(verifier.verify("id-token", null)).thenReturn(googlePrincipal());
         when(identityRepository.findByProviderAndProviderSubject("GOOGLE", "google-subject"))
                 .thenReturn(Optional.empty());
         when(userServiceClient.register(any()))
                 .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));
+        when(userServiceClient.getPrincipalByEmail("driver@example.com")).thenReturn(principal);
+        when(identityRepository.save(any(OAuthIdentity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userServiceClient.getPrincipal(userId)).thenReturn(principal);
+        when(userServiceClient.markEmailVerified(userId)).thenReturn(verifiedPrincipal);
+        when(authService.issueTokensForPrincipal(verifiedPrincipal, "device-1"))
+                .thenReturn(new AuthService.TokenPair("access", "refresh"));
 
         OAuthLoginService service = new OAuthLoginService(
                 verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true, true);
 
-        assertThatThrownBy(() -> service.loginWithGoogle("id-token", null, "device-1"))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("Email already registered");
+        AuthService.TokenPair pair = service.loginWithGoogle("id-token", null, "device-1");
 
-        verify(authService, never()).issueTokensForPrincipal(any(), eq("device-1"));
+        assertThat(pair.accessToken()).isEqualTo("access");
+        verify(userServiceClient).getPrincipalByEmail("driver@example.com");
+        verify(identityRepository).save(any(OAuthIdentity.class));
+        verify(userServiceClient).markEmailVerified(userId);
+        verify(authService).issueTokensForPrincipal(verifiedPrincipal, "device-1");
     }
 
     @Test
