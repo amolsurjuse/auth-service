@@ -107,6 +107,9 @@ app:
       facebook:
         enabled: ${APP_SECURITY_OAUTH_FACEBOOK_ENABLED:false}
         graph-base-url: ${APP_SECURITY_OAUTH_FACEBOOK_GRAPH_BASE_URL:https://graph.facebook.com}
+        app-id: ${APP_SECURITY_OAUTH_FACEBOOK_APP_ID:}
+        app-secret: ${APP_SECURITY_OAUTH_FACEBOOK_APP_SECRET:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_FACEBOOK_AUTO_PROVISION_USERS:true}
 
   email-verification:
     ttl-minutes: ${APP_EMAIL_VERIFICATION_TTL_MINUTES:1440}

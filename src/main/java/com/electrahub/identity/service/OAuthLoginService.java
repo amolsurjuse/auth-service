@@ -25,7 +25,8 @@ public class OAuthLoginService {
     private final OAuthIdentityRepository identityRepository;
     private final UserServiceClient userServiceClient;
     private final AuthService authService;
-    private final boolean autoProvisionUsers;
+    private final boolean googleAutoProvisionUsers;
+    private final boolean facebookAutoProvisionUsers;
 
     public OAuthLoginService(
             GoogleOidcTokenVerifier googleVerifier,
@@ -33,14 +34,16 @@ public class OAuthLoginService {
             OAuthIdentityRepository identityRepository,
             UserServiceClient userServiceClient,
             AuthService authService,
-            @Value("${app.security.oauth.google.auto-provision-users:true}") boolean autoProvisionUsers
+            @Value("${app.security.oauth.google.auto-provision-users:true}") boolean googleAutoProvisionUsers,
+            @Value("${app.security.oauth.facebook.auto-provision-users:true}") boolean facebookAutoProvisionUsers
     ) {
         this.googleVerifier = googleVerifier;
         this.facebookVerifier = facebookVerifier;
         this.identityRepository = identityRepository;
         this.userServiceClient = userServiceClient;
         this.authService = authService;
-        this.autoProvisionUsers = autoProvisionUsers;
+        this.googleAutoProvisionUsers = googleAutoProvisionUsers;
+        this.facebookAutoProvisionUsers = facebookAutoProvisionUsers;
     }
 
     @Transactional
@@ -100,7 +103,7 @@ public class OAuthLoginService {
     }
 
     private OAuthIdentity createIdentity(GoogleOidcPrincipal principal) {
-        if (!autoProvisionUsers) {
+        if (!googleAutoProvisionUsers) {
             throw new ConflictException("Google account is not linked to an ElectraHub account");
         }
 
@@ -141,7 +144,7 @@ public class OAuthLoginService {
     }
 
     private OAuthIdentity createIdentity(FacebookOAuthPrincipal principal) {
-        if (!autoProvisionUsers) {
+        if (!facebookAutoProvisionUsers) {
             throw new ConflictException("Facebook account is not linked to an ElectraHub account");
         }
 

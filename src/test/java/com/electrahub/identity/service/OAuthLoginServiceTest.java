@@ -47,7 +47,7 @@ class OAuthLoginServiceTest {
                 .thenReturn(new AuthService.TokenPair("access", "refresh"));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true, true);
 
         AuthService.TokenPair pair = service.loginWithGoogle("id-token", "nonce", "device-1");
 
@@ -81,7 +81,7 @@ class OAuthLoginServiceTest {
                 .thenReturn(new AuthService.TokenPair("access", "refresh"));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true, true);
 
         AuthService.TokenPair pair = service.loginWithGoogle("id-token", null, "device-1");
 
@@ -105,13 +105,83 @@ class OAuthLoginServiceTest {
                 .thenThrow(new RestClientResponseException("conflict", 409, "Conflict", null, null, null));
 
         OAuthLoginService service = new OAuthLoginService(
-                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true);
+                verifier, mock(FacebookOAuthTokenVerifier.class), identityRepository, userServiceClient, authService, true, true);
 
         assertThatThrownBy(() -> service.loginWithGoogle("id-token", null, "device-1"))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("Email already registered");
 
         verify(authService, never()).issueTokensForPrincipal(any(), eq("device-1"));
+    }
+
+    @Test
+    void facebookLoginAutoProvisionsNewUserAndSavesIdentityLink() {
+        FacebookOAuthTokenVerifier facebookVerifier = mock(FacebookOAuthTokenVerifier.class);
+        OAuthIdentityRepository identityRepository = mock(OAuthIdentityRepository.class);
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+        AuthService authService = mock(AuthService.class);
+
+        UUID userId = UUID.randomUUID();
+        FacebookOAuthPrincipal facebookPrincipal = new FacebookOAuthPrincipal(
+                "facebook-subject",
+                "driver@example.com",
+                true,
+                "Driver",
+                "Example",
+                "https://example.com/facebook-picture.png"
+        );
+        UserServiceClient.UserPrincipal principal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, false, false, List.of("USER"));
+        UserServiceClient.UserPrincipal verifiedPrincipal = new UserServiceClient.UserPrincipal(
+                userId, "driver@example.com", true, true, false, List.of("USER"));
+
+        when(facebookVerifier.verify("facebook-token")).thenReturn(facebookPrincipal);
+        when(identityRepository.findByProviderAndProviderSubject("FACEBOOK", "facebook-subject"))
+                .thenReturn(Optional.empty());
+        when(userServiceClient.register(any())).thenReturn(principal);
+        when(identityRepository.save(any(OAuthIdentity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userServiceClient.getPrincipal(userId)).thenReturn(principal);
+        when(userServiceClient.markEmailVerified(userId)).thenReturn(verifiedPrincipal);
+        when(authService.issueTokensForPrincipal(verifiedPrincipal, "device-1"))
+                .thenReturn(new AuthService.TokenPair("access", "refresh"));
+
+        OAuthLoginService service = new OAuthLoginService(
+                mock(GoogleOidcTokenVerifier.class), facebookVerifier, identityRepository,
+                userServiceClient, authService, true, true);
+
+        AuthService.TokenPair pair = service.loginWithFacebook("facebook-token", "device-1");
+
+        assertThat(pair.accessToken()).isEqualTo("access");
+        verify(userServiceClient).register(any(UserServiceClient.RegisterUserRequest.class));
+        verify(userServiceClient).markEmailVerified(userId);
+        verify(identityRepository).save(any(OAuthIdentity.class));
+    }
+
+    @Test
+    void facebookLoginHonorsFacebookAutoProvisionSetting() {
+        FacebookOAuthTokenVerifier facebookVerifier = mock(FacebookOAuthTokenVerifier.class);
+        OAuthIdentityRepository identityRepository = mock(OAuthIdentityRepository.class);
+        UserServiceClient userServiceClient = mock(UserServiceClient.class);
+
+        when(facebookVerifier.verify("facebook-token")).thenReturn(new FacebookOAuthPrincipal(
+                "facebook-subject",
+                "driver@example.com",
+                true,
+                "Driver",
+                "Example",
+                null
+        ));
+        when(identityRepository.findByProviderAndProviderSubject("FACEBOOK", "facebook-subject"))
+                .thenReturn(Optional.empty());
+
+        OAuthLoginService service = new OAuthLoginService(
+                mock(GoogleOidcTokenVerifier.class), facebookVerifier, identityRepository,
+                userServiceClient, mock(AuthService.class), true, false);
+
+        assertThatThrownBy(() -> service.loginWithFacebook("facebook-token", "device-1"))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Facebook account is not linked to an ElectraHub account");
+        verify(userServiceClient, never()).register(any());
     }
 
     private GoogleOidcPrincipal googlePrincipal() {
