@@ -32,7 +32,7 @@ public class ObservabilityAspect {
      * @param meterRegistry input consumed by ObservabilityAspect.
      */
     public ObservabilityAspect(MeterRegistry meterRegistry) {
-        LOGGER.info(" Entering ObservabilityAspect#ObservabilityAspect");
+        LOGGER.debug("Entering ObservabilityAspect#ObservabilityAspect");
         LOGGER.debug(" Entering ObservabilityAspect#ObservabilityAspect with debug context");
         this.meterRegistry = meterRegistry;
     }
@@ -65,7 +65,7 @@ public class ObservabilityAspect {
                 .register(meterRegistry)
                 .increment();
 
-        LOGGER.info("Starting {}.{}", className, methodName);
+        LOGGER.debug("Starting {}.{}", className, methodName);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Arguments for {}.{} -> {}", className, methodName, formatArgs(joinPoint.getArgs()));
         }
@@ -83,7 +83,7 @@ public class ObservabilityAspect {
                     .tag("outcome", "success")
                     .register(meterRegistry));
 
-            LOGGER.info("Completed {}.{} in {} ms", className, methodName, durationMs);
+            LOGGER.debug("Completed {}.{} in {} ms", className, methodName, durationMs);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Result for {}.{} -> {}", className, methodName, abbreviate(result));
             }
@@ -105,7 +105,7 @@ public class ObservabilityAspect {
                     .register(meterRegistry)
                     .increment();
 
-            LOGGER.info("Failed {}.{} in {} ms: {}", className, methodName, durationMs, ex.toString());
+            LOGGER.warn("Failed {}.{} in {} ms: {}", className, methodName, durationMs, ex.toString());
             LOGGER.debug("Failure stack trace for {}.{}", className, methodName, ex);
             throw ex;
         }

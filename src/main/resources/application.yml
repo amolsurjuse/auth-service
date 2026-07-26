@@ -1,5 +1,13 @@
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    # Bound request concurrency so a registration burst is queued instead of
+    # creating enough native threads to exhaust the container.
+    threads:
+      max: ${SERVER_TOMCAT_THREADS_MAX:200}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:10}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:100}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:8192}
   error:
     include-message: always
     include-stacktrace: always
