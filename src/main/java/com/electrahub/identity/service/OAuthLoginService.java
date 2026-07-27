@@ -107,7 +107,11 @@ public class OAuthLoginService {
             throw new ConflictException("Google account is not linked to an ElectraHub account");
         }
 
-        UserServiceClient.UserPrincipal userPrincipal = registerNewUser(principal);
+        UserServiceClient.UserPrincipal userPrincipal = registerOrLinkExistingUser(
+                principal.email(),
+                principal.givenName(),
+                principal.familyName()
+        );
         OffsetDateTime now = OffsetDateTime.now();
         OAuthIdentity identity = new OAuthIdentity(
                 UUID.randomUUID(),
@@ -148,7 +152,7 @@ public class OAuthLoginService {
             throw new ConflictException("Facebook account is not linked to an ElectraHub account");
         }
 
-        UserServiceClient.UserPrincipal userPrincipal = registerNewUser(
+        UserServiceClient.UserPrincipal userPrincipal = registerOrLinkExistingUser(
                 principal.email(),
                 principal.givenName(),
                 principal.familyName()
@@ -176,14 +180,18 @@ public class OAuthLoginService {
         }
     }
 
-    private UserServiceClient.UserPrincipal registerNewUser(GoogleOidcPrincipal principal) {
+    private UserServiceClient.UserPrincipal registerOrLinkExistingUser(
+            String email,
+            String givenName,
+            String familyName
+    ) {
         try {
-            return registerNewUser(principal.email(), principal.givenName(), principal.familyName());
+            return registerNewUser(email, givenName, familyName);
         } catch (ConflictException ex) {
-            // Google has already verified ownership of this email. Link the Google
-            // subject to the existing ElectraHub account instead of requiring the
+            // The provider has already verified ownership of this email. Link the
+            // social identity to the existing ElectraHub account instead of requiring the
             // user to sign in with a password before social login can succeed.
-            return userServiceClient.getPrincipalByEmail(principal.email());
+            return userServiceClient.getPrincipalByEmail(email);
         }
     }
 
