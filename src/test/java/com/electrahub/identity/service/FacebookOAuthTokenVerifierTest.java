@@ -36,7 +36,7 @@ class FacebookOAuthTokenVerifierTest {
                 .andExpect(queryParam("input_token", "user-token"))
                 .andRespond(withSuccess("""
                         {"data":{"app_id":"app-123","type":"USER","is_valid":true,"user_id":"user-42"}}
-                        """, MediaType.APPLICATION_JSON));
+                        """, MediaType.parseMediaType("text/javascript;charset=UTF-8")));
         server.expect(requestTo("https://graph.facebook.test/me?fields=id,email,first_name,last_name,picture.type(large)&access_token=user-token&appsecret_proof="
                         + appSecretProof("server-secret", "user-token")))
                 .andRespond(withSuccess("""

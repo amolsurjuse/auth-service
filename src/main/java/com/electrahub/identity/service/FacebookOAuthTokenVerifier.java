@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -21,6 +23,7 @@ import java.util.HexFormat;
 @Component
 public class FacebookOAuthTokenVerifier {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookOAuthTokenVerifier.class);
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
     private final boolean enabled;
     private final String appId;
@@ -102,14 +105,15 @@ public class FacebookOAuthTokenVerifier {
 
     private JsonNode fetchProfile(String accessToken, String appSecretProof) {
         try {
-            return restClient.get()
+            String responseBody = restClient.get()
                     .uri(
                             "/me?fields=id,email,first_name,last_name,picture.type(large)&access_token={accessToken}&appsecret_proof={appSecretProof}",
                             accessToken,
                             appSecretProof
                     )
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(String.class);
+            return parseProviderJson(responseBody, "profile");
         } catch (RestClientResponseException ex) {
             LOGGER.warn("Facebook token rejected stage=profile reason=provider_http_error status={}",
                     ex.getStatusCode().value());
@@ -124,14 +128,15 @@ public class FacebookOAuthTokenVerifier {
     private String verifyTokenAudience(String accessToken) {
         JsonNode response;
         try {
-            response = restClient.get()
+            String responseBody = restClient.get()
                     .uri(
                             "/debug_token?input_token={inputToken}&access_token={appAccessToken}",
                             accessToken,
                             appId + "|" + appSecret
                     )
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(String.class);
+            response = parseProviderJson(responseBody, "debug_token");
         } catch (RestClientResponseException ex) {
             LOGGER.warn("Facebook token rejected stage=debug_token reason=provider_http_error status={}",
                     ex.getStatusCode().value());
@@ -157,6 +162,18 @@ public class FacebookOAuthTokenVerifier {
             throw new BadCredentialsException("Facebook access token is not a user token");
         }
         return userId;
+    }
+
+    private JsonNode parseProviderJson(String responseBody, String stage) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return null;
+        }
+        try {
+            return JSON_MAPPER.readTree(responseBody);
+        } catch (JacksonException ex) {
+            LOGGER.warn("Facebook token rejected stage={} reason=invalid_provider_json", stage);
+            throw new BadCredentialsException("Invalid Facebook access token");
+        }
     }
 
     private String createAppSecretProof(String accessToken) {
