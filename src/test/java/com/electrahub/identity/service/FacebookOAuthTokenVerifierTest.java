@@ -90,6 +90,24 @@ class FacebookOAuthTokenVerifierTest {
     }
 
     @Test
+    void rejectsProfileWhenEmailPermissionWasNotGranted() {
+        server.expect(requestTo("https://graph.facebook.test/debug_token?input_token=user-token&access_token=app-123%7Cserver-secret"))
+                .andRespond(withSuccess("""
+                        {"data":{"app_id":"app-123","type":"USER","is_valid":true,"user_id":"user-42"}}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://graph.facebook.test/me?fields=id,email,first_name,last_name,picture.type(large)&access_token=user-token&appsecret_proof="
+                        + appSecretProof("server-secret", "user-token")))
+                .andRespond(withSuccess("""
+                        {"id":"user-42","first_name":"Driver","last_name":"Example"}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> verifier.verify("user-token"))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Facebook email permission is required");
+        server.verify();
+    }
+
+    @Test
     void refusesToRunWhenServerCredentialsAreMissing() {
         FacebookOAuthTokenVerifier unconfigured = new FacebookOAuthTokenVerifier(
                 true,
