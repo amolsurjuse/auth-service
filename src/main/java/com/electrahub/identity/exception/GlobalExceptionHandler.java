@@ -63,6 +63,20 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), req);
     }
 
+    @ExceptionHandler(OtpRateLimitException.class)
+    public ResponseEntity<ApiError> handleOtpRateLimit(OtpRateLimitException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiError(
+                        OffsetDateTime.now(),
+                        HttpStatus.TOO_MANY_REQUESTS.value(),
+                        HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                        ex.getMessage(),
+                        req.getRequestURI()
+                ));
+    }
+
     /**
      * Processes handle authentication for `GlobalExceptionHandler`.
      *

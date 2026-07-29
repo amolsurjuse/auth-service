@@ -3,7 +3,6 @@ package com.electrahub.identity.service;
 import com.electrahub.identity.domain.EmailVerificationToken;
 import com.electrahub.identity.integration.UserServiceClient;
 import com.electrahub.identity.repository.EmailVerificationTokenRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,21 +17,18 @@ public class EmailVerificationService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final UserServiceClient userServiceClient;
     private final NotificationEventPublisher notificationPublisher;
-    private final String verificationUrl;
-    private final long ttlMinutes;
+    private final OtpChallengeService otpChallengeService;
 
     public EmailVerificationService(
             EmailVerificationTokenRepository tokenRepository,
             UserServiceClient userServiceClient,
             NotificationEventPublisher notificationPublisher,
-            @Value("${app.notification.driver-verify-email-url:https://driver-portal.electrahub.net/verify-email}") String verificationUrl,
-            @Value("${app.email-verification.ttl-minutes:1440}") long ttlMinutes
+            OtpChallengeService otpChallengeService
     ) {
         this.tokenRepository = tokenRepository;
         this.userServiceClient = userServiceClient;
         this.notificationPublisher = notificationPublisher;
-        this.verificationUrl = verificationUrl;
-        this.ttlMinutes = ttlMinutes;
+        this.otpChallengeService = otpChallengeService;
     }
 
     @Transactional
@@ -40,30 +36,14 @@ public class EmailVerificationService {
         if (principal == null || principal.isEmailVerified()) {
             return;
         }
-        String token = UUID.randomUUID() + "." + UUID.randomUUID();
-        OffsetDateTime now = OffsetDateTime.now();
-        tokenRepository.save(new EmailVerificationToken(
-                UUID.randomUUID(),
-                principal.userId(),
-                principal.email(),
-                sha256Hex(token),
-                now.plusMinutes(ttlMinutes),
-                now
-        ));
-        String url = verificationUrl + "?token=" + token;
-        notificationPublisher.publish(
-                "USER_EMAIL_VERIFICATION_REQUESTED",
-                principal.userId(),
-                principal.email(),
-                Map.of("email", principal.email(), "verificationUrl", url)
-        );
+        otpChallengeService.issueForRegistration(principal);
     }
 
     @Transactional
     public void resend(String email) {
         try {
             UserServiceClient.UserPrincipal principal = userServiceClient.getPrincipalByEmail(email);
-            sendVerification(principal);
+            otpChallengeService.issue(principal, true);
         } catch (RuntimeException ignored) {
             // Do not disclose whether an account exists.
         }
@@ -86,6 +66,18 @@ public class EmailVerificationService {
                 Map.of("email", principal.email())
         );
         return principal;
+    }
+
+    public OtpChallengeService.ChallengeStatus otpStatus(UUID userId) {
+        return otpChallengeService.status(userId);
+    }
+
+    public OtpChallengeService.ChallengeStatus requestOtp(UUID userId) {
+        return otpChallengeService.request(userId);
+    }
+
+    public UserServiceClient.UserPrincipal verifyOtp(UUID userId, UUID challengeId, String code) {
+        return otpChallengeService.verify(userId, challengeId, code);
     }
 
     private String sha256Hex(String value) {

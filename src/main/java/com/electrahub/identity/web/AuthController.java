@@ -8,6 +8,7 @@ import com.electrahub.identity.web.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -234,6 +235,25 @@ public class AuthController {
         ));
     }
 
+    @GetMapping("/email-verification/otp/status")
+    public OtpChallengeService.ChallengeStatus emailVerificationOtpStatus(HttpServletRequest request) {
+        return emailVerificationService.otpStatus(authenticatedUserId(request));
+    }
+
+    @PostMapping("/email-verification/otp/request")
+    public ResponseEntity<OtpChallengeService.ChallengeStatus> requestEmailVerificationOtp(HttpServletRequest request) {
+        return ResponseEntity.accepted().body(emailVerificationService.requestOtp(authenticatedUserId(request)));
+    }
+
+    @PostMapping("/email-verification/otp/verify")
+    public ResponseEntity<AcceptedResponse> verifyEmailOtp(
+            @Valid @RequestBody VerifyEmailOtpRequest req,
+            HttpServletRequest request
+    ) {
+        emailVerificationService.verifyOtp(authenticatedUserId(request), req.challengeId(), req.code());
+        return ResponseEntity.ok(new AcceptedResponse("OK", "Email address has been verified."));
+    }
+
     /**
      * CSRF-protected: client must send X-XSRF-TOKEN header from XSRF-TOKEN cookie.
      * Refresh token is read from HttpOnly cookie.
@@ -325,6 +345,18 @@ public class AuthController {
                 || normalizedUserAgent.contains("ipad")
                 || normalizedUserAgent.contains("android")
                 || normalizedUserAgent.contains("mobile");
+    }
+
+    private static UUID authenticatedUserId(HttpServletRequest request) {
+        Object userId = request.getAttribute("uid");
+        if (userId == null) {
+            throw new AuthenticationCredentialsNotFoundException("Authentication required");
+        }
+        try {
+            return UUID.fromString(String.valueOf(userId));
+        } catch (IllegalArgumentException ex) {
+            throw new AuthenticationCredentialsNotFoundException("Authentication required");
+        }
     }
 
     /**

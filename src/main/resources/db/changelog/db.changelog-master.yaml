@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/db.changelog-006-oauth-identities.yaml
   - include:
       file: db/changelog/db.changelog-007-email-verification.yaml
+  - include:
+      file: db/changelog/db.changelog-008-verification-challenges.yaml
