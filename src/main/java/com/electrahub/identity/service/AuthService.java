@@ -129,6 +129,13 @@ public class AuthService {
     public TokenPair register(String email, String rawPassword, String deviceId,
                               String firstName, String lastName, String phoneNumber, AddressDto addressDto,
                               Duration refreshTtl) {
+        return register(email, rawPassword, deviceId, firstName, lastName, phoneNumber, addressDto, null, refreshTtl);
+    }
+
+    @Transactional
+    public TokenPair register(String email, String rawPassword, String deviceId,
+                              String firstName, String lastName, String phoneNumber, AddressDto addressDto,
+                              String application, Duration refreshTtl) {
         try {
             var principal = userServiceClient.register(new UserServiceClient.RegisterUserRequest(
                     email,
@@ -136,7 +143,8 @@ public class AuthService {
                     firstName,
                     lastName,
                     phoneNumber,
-                    addressDto
+                    addressDto,
+                    application
             ));
             notificationEventPublisher.publish(
                     "USER_ACCOUNT_CREATED",
