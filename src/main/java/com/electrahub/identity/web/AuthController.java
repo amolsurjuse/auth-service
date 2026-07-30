@@ -130,6 +130,7 @@ public class AuthController {
                 req.lastName(),
                 req.phoneNumber(),
                 req.address(),
+                req.application(),
                 refreshTtl
         );
 

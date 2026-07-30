@@ -127,8 +127,13 @@ public class UserServiceClient {
             String firstName,
             String lastName,
             String phoneNumber,
-            AddressDto address
+            AddressDto address,
+            String application
     ) {
+        public RegisterUserRequest(String email, String password, String firstName, String lastName,
+                                   String phoneNumber, AddressDto address) {
+            this(email, password, firstName, lastName, phoneNumber, address, null);
+        }
     }
 
     public record AuthenticateUserRequest(String email, String password) {
