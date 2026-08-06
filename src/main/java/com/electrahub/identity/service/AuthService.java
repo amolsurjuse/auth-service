@@ -363,7 +363,8 @@ public class AuthService {
 
     private TokenPair issueTokens(UserServiceClient.UserPrincipal principal, String deviceId, Duration refreshTtl) {
         long tv = tokenVersionService.getVersion(principal.userId());
-        String access = jwtService.generateAccessToken(principal.email(), principal.userId().toString(), tv, principal.roles());
+        String access = jwtService.generateAccessToken(
+                principal.email(), principal.userId().toString(), principal.effectiveTenantId(), tv, principal.roles());
 
         String refreshPlain = UUID.randomUUID() + "." + UUID.randomUUID();
         String refreshHash = sha256Hex(refreshPlain);

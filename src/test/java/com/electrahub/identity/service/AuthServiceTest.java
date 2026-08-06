@@ -120,9 +120,10 @@ class AuthServiceTest {
 
         UUID userId = UUID.randomUUID();
         when(userServiceClient.register(any()))
-                .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
+                .thenReturn(new UserServiceClient.UserPrincipal(
+                        userId, "user@example.com", true, false, false, List.of("USER"), "tenant-acme"));
         when(tokenVersionService.getVersion(userId)).thenReturn(1L);
-        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService service = new AuthService(
@@ -142,6 +143,8 @@ class AuthServiceTest {
 
         assertThat(pair.accessToken()).isEqualTo("access-token");
         assertThat(pair.refreshToken()).isNotBlank();
+        verify(jwtService).generateAccessToken(
+                eq("user@example.com"), eq(userId.toString()), eq("tenant-acme"), eq(1L), eq(List.of("USER")));
 
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
         verify(refreshTokenRepository).save(captor.capture());
@@ -186,7 +189,7 @@ class AuthServiceTest {
         when(userServiceClient.getPrincipal(userId))
                 .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(2L);
-        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService service = new AuthService(
@@ -238,7 +241,7 @@ class AuthServiceTest {
         when(userServiceClient.getPrincipal(userId))
                 .thenReturn(new UserServiceClient.UserPrincipal(userId, "user@example.com", true, false, false, List.of("USER")));
         when(tokenVersionService.getVersion(userId)).thenReturn(2L);
-        when(jwtService.generateAccessToken(anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
+        when(jwtService.generateAccessToken(anyString(), anyString(), anyString(), anyLong(), anyList())).thenReturn("access-token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService service = new AuthService(

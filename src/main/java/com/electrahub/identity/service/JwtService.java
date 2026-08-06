@@ -32,7 +32,12 @@ public class JwtService {
         this.accessTtlMinutes = accessTtlMinutes;
     }
 
-    public record ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp, List<String> roles) {}
+    public record ParsedToken(String subjectEmail, String jti, String uid, String tenantId,
+                              long tv, Date exp, List<String> roles) {
+        public ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp, List<String> roles) {
+            this(subjectEmail, jti, uid, "electrahub", tv, exp, roles);
+        }
+    }
 
     /**
      * Executes generate access token for `JwtService`.
@@ -46,6 +51,11 @@ public class JwtService {
      * @return result produced by generateAccessToken.
      */
     public String generateAccessToken(String subjectEmail, String uid, long tokenVersion, List<String> roles) {
+        return generateAccessToken(subjectEmail, uid, "electrahub", tokenVersion, roles);
+    }
+
+    public String generateAccessToken(String subjectEmail, String uid, String tenantId,
+                                      long tokenVersion, List<String> roles) {
         LOGGER.info(" Entering JwtService#generateAccessToken");
         LOGGER.debug(" Entering JwtService#generateAccessToken with debug context");
         Instant now = Instant.now();
@@ -58,6 +68,7 @@ public class JwtService {
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .claim("uid", uid)
+                .claim("tid", normalizeTenantId(tenantId))
                 .claim("tv", tokenVersion)
                 .claim("roles", roles)
                 .signWith(signingKey)
@@ -99,10 +110,19 @@ public class JwtService {
                 c.getSubject(),
                 c.getId(),
                 String.valueOf(c.get("uid")),
+                normalizeTenantId(c.get("tid") == null ? null : String.valueOf(c.get("tid"))),
                 tv,
                 c.getExpiration(),
                 roles
         );
+    }
+
+    private static String normalizeTenantId(String value) {
+        String normalized = value == null ? "electrahub" : value.trim().toLowerCase(Locale.ROOT);
+        if (!normalized.matches("[a-z0-9][a-z0-9._:-]{0,63}")) {
+            throw new JwtException("Invalid tenant ID");
+        }
+        return normalized;
     }
 
     /**

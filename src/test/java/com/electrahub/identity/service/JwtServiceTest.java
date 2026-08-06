@@ -31,11 +31,12 @@ class JwtServiceTest {
                 5
         );
 
-        String token = service.generateAccessToken("user@example.com", "uid", 7L, List.of("USER"));
+        String token = service.generateAccessToken("user@example.com", "uid", "tenant-acme", 7L, List.of("USER"));
         JwtService.ParsedToken parsed = service.parseAndValidate(token);
 
         assertThat(parsed.subjectEmail()).isEqualTo("user@example.com");
         assertThat(parsed.uid()).isEqualTo("uid");
+        assertThat(parsed.tenantId()).isEqualTo("tenant-acme");
         assertThat(parsed.tv()).isEqualTo(7L);
     }
 

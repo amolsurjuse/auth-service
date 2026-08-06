@@ -142,7 +142,17 @@ public class UserServiceClient {
     public record ResetPasswordRequest(String newPassword) {
     }
 
-    public record UserPrincipal(UUID userId, String email, Boolean enabled, Boolean emailVerified, Boolean pendingDeletion, List<String> roles) {
+    public record UserPrincipal(UUID userId, String email, Boolean enabled, Boolean emailVerified,
+                                Boolean pendingDeletion, List<String> roles, String tenantId) {
+        public UserPrincipal(UUID userId, String email, Boolean enabled, Boolean emailVerified,
+                             Boolean pendingDeletion, List<String> roles) {
+            this(userId, email, enabled, emailVerified, pendingDeletion, roles, "electrahub");
+        }
+
+        public String effectiveTenantId() {
+            return tenantId == null || tenantId.isBlank() ? "electrahub" : tenantId;
+        }
+
         public boolean isEnabled() {
             return enabled == null || enabled;
         }

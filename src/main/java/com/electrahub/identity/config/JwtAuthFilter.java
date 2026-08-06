@@ -80,6 +80,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 // Pass useful info for logout endpoints
                 request.setAttribute("uid", parsed.uid());
+                request.setAttribute("tid", parsed.tenantId());
                 request.setAttribute("jti", parsed.jti());
                 request.setAttribute("exp", parsed.exp());
             }
