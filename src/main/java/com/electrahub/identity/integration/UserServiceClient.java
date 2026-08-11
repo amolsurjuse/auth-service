@@ -106,6 +106,16 @@ public class UserServiceClient {
                 .body(UserPrincipal.class);
     }
 
+    public PhoneVerificationContact getPhoneVerificationContact(UUID userId) {
+        return restClient.get().uri("/api/internal/users/{userId}/phone-verification", userId)
+                .retrieve().body(PhoneVerificationContact.class);
+    }
+
+    public PhoneVerificationContact markPhoneVerified(UUID userId) {
+        return restClient.post().uri("/api/internal/users/{userId}/phone/verify", userId)
+                .retrieve().body(PhoneVerificationContact.class);
+    }
+
     /**
      * Retrieves list countries for `UserServiceClient`.
      *
@@ -141,6 +151,8 @@ public class UserServiceClient {
 
     public record ResetPasswordRequest(String newPassword) {
     }
+
+    public record PhoneVerificationContact(String phoneNumber, boolean phoneVerified) {}
 
     public record UserPrincipal(UUID userId, String email, Boolean enabled, Boolean emailVerified,
                                 Boolean pendingDeletion, List<String> roles, String tenantId) {
