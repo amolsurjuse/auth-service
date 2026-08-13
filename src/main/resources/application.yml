@@ -1,5 +1,13 @@
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    # Bound request concurrency so a registration burst is queued instead of
+    # creating enough native threads to exhaust the container.
+    threads:
+      max: ${SERVER_TOMCAT_THREADS_MAX:200}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:10}
+    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:100}
+    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:8192}
   error:
     include-message: always
     include-stacktrace: always
@@ -11,6 +19,8 @@ logging:
     org.springframework: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:WARN}
     org.hibernate: ${LOGGING_LEVEL_ORG_HIBERNATE:WARN}
     liquibase: ${LOGGING_LEVEL_LIQUIBASE:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
 
 spring:
   datasource:
@@ -45,26 +55,67 @@ spring:
           max-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE:16}
           min-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE:2}
           time-between-eviction-runs: ${SPRING_DATA_REDIS_LETTUCE_POOL_TIME_BETWEEN_EVICTION_RUNS:30s}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 management:
   endpoints:
     web:
       base-path: /actuator
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
+  tracing:
+    sampling:
+      probability: ${AUTH_SERVICE_TRACING_SAMPLING_PROBABILITY:1.0}
+
 
 app:
+  user-service:
+    base-url: ${APP_USER_SERVICE_BASE_URL:http://user-service:8082}
+  notification:
+    exchange: ${APP_NOTIFICATION_EXCHANGE:notifications.events}
+    domain-routing-key: ${APP_NOTIFICATION_DOMAIN_ROUTING_KEY:notifications.domain}
+    tenant-id: ${APP_NOTIFICATION_TENANT_ID:electrahub}
+    driver-reset-password-url: ${APP_DRIVER_RESET_PASSWORD_URL:https://driver-portal.electrahub.net/reset-password}
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:4201,http://localhost:4211,http://localhost:8080,https://dev.electrahub.com,https://dev.electrahub.com:8443,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com,https://driver-portal-dev.electrahub.com:8443,https://driver-portal-*.electrahub.com,https://driver-portal-*.electrahub.com:*,https://admin-portal-dev.electrahub.com,https://admin-portal-dev.electrahub.com:8443,https://admin-portal-*.electrahub.com,https://admin-portal-*.electrahub.com:*,https://dev.electrahub.net,https://api-dev.electrahub.net,https://driver-dev.electrahub.net,https://driver-portal-dev.electrahub.net,https://admin-dev.electrahub.net,https://admin-portal-dev.electrahub.net,https://simulator-dev.electrahub.net,https://ocpp-simulator-dev.electrahub.net,https://argocd-dev.electrahub.net}
+
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
       secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
       access-token-ttl-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_MINUTES:15}
       refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+      refresh-token-web-ttl-hours: ${APP_SECURITY_JWT_REFRESH_TOKEN_WEB_TTL_HOURS:24}
+      refresh-token-rotation-grace-seconds: ${APP_SECURITY_JWT_REFRESH_TOKEN_ROTATION_GRACE_SECONDS:60}
+    oauth:
+      google:
+        enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}
+        issuer: ${APP_SECURITY_OAUTH_GOOGLE_ISSUER:https://accounts.google.com}
+        jwk-set-uri: ${APP_SECURITY_OAUTH_GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+        audiences: ${APP_SECURITY_OAUTH_GOOGLE_AUDIENCES:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_GOOGLE_AUTO_PROVISION_USERS:true}
+      facebook:
+        enabled: ${APP_SECURITY_OAUTH_FACEBOOK_ENABLED:false}
+        graph-base-url: ${APP_SECURITY_OAUTH_FACEBOOK_GRAPH_BASE_URL:https://graph.facebook.com}
+        app-id: ${APP_SECURITY_OAUTH_FACEBOOK_APP_ID:}
+        app-secret: ${APP_SECURITY_OAUTH_FACEBOOK_APP_SECRET:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_FACEBOOK_AUTO_PROVISION_USERS:true}
+
+
+  otp:
+    pepper: ${AUTH_OTP_PEPPER:local-development-otp-pepper-change-me-now}
+    ttl-minutes: ${AUTH_OTP_TTL_MINUTES:10}
+    resend-cooldown-seconds: ${AUTH_OTP_RESEND_COOLDOWN_SECONDS:60}
+    max-attempts: ${AUTH_OTP_MAX_ATTEMPTS:5}
 
   cookies:
     refresh-name: ${APP_COOKIES_REFRESH_NAME:__Host-rt}
@@ -80,6 +131,9 @@ app:
     refresh-device-prefix: ${APP_REDIS_REFRESH_DEVICE_PREFIX:rtd:}
     denylist-prefix: ${APP_REDIS_DENYLIST_PREFIX:deny:jwt:}
     token-version-prefix: ${APP_REDIS_TOKEN_VERSION_PREFIX:tv:}
+    token-version-ttl-days: ${APP_REDIS_TOKEN_VERSION_TTL_DAYS:35}
+    password-reset-prefix: ${APP_REDIS_PASSWORD_RESET_PREFIX:pr:}
+    password-reset-ttl-minutes: ${APP_REDIS_PASSWORD_RESET_TTL_MINUTES:30}
 
 openapi:
   enabled: ${OPENAPI_ENABLED:true}

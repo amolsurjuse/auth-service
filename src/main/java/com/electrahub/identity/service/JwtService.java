@@ -1,5 +1,7 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,8 @@ import java.util.*;
 
 @Service
 public class JwtService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtService.class);
+
 
     private final Key signingKey;
     private final String issuer;
@@ -28,9 +32,32 @@ public class JwtService {
         this.accessTtlMinutes = accessTtlMinutes;
     }
 
-    public record ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp) {}
+    public record ParsedToken(String subjectEmail, String jti, String uid, String tenantId,
+                              long tv, Date exp, List<String> roles) {
+        public ParsedToken(String subjectEmail, String jti, String uid, long tv, Date exp, List<String> roles) {
+            this(subjectEmail, jti, uid, "electrahub", tv, exp, roles);
+        }
+    }
 
+    /**
+     * Executes generate access token for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param subjectEmail input consumed by generateAccessToken.
+     * @param uid input consumed by generateAccessToken.
+     * @param tokenVersion input consumed by generateAccessToken.
+     * @param roles input consumed by generateAccessToken.
+     * @return result produced by generateAccessToken.
+     */
     public String generateAccessToken(String subjectEmail, String uid, long tokenVersion, List<String> roles) {
+        return generateAccessToken(subjectEmail, uid, "electrahub", tokenVersion, roles);
+    }
+
+    public String generateAccessToken(String subjectEmail, String uid, String tenantId,
+                                      long tokenVersion, List<String> roles) {
+        LOGGER.info(" Entering JwtService#generateAccessToken");
+        LOGGER.debug(" Entering JwtService#generateAccessToken with debug context");
         Instant now = Instant.now();
         Instant exp = now.plus(accessTtlMinutes, ChronoUnit.MINUTES);
 
@@ -41,12 +68,21 @@ public class JwtService {
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .claim("uid", uid)
+                .claim("tid", normalizeTenantId(tenantId))
                 .claim("tv", tokenVersion)
                 .claim("roles", roles)
                 .signWith(signingKey)
                 .compact();
     }
 
+    /**
+     * Executes parse and validate for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param token input consumed by parseAndValidate.
+     * @return result produced by parseAndValidate.
+     */
     public ParsedToken parseAndValidate(String token) {
         Jws<Claims> jws = Jwts.parser()
                 .verifyWith((javax.crypto.SecretKey) signingKey)
@@ -62,17 +98,42 @@ public class JwtService {
         Object tvObj = c.getOrDefault("tv", 0);
         long tv = (tvObj instanceof Number n) ? n.longValue() : Long.parseLong(String.valueOf(tvObj));
 
+        Object rolesObj = c.getOrDefault("roles", List.of());
+        List<String> roles = switch (rolesObj) {
+            case List<?> list -> list.stream().map(String::valueOf).toList();
+            case String s -> List.of(s);
+            case null -> List.of();
+            default -> List.of(String.valueOf(rolesObj));
+        };
+
         return new ParsedToken(
                 c.getSubject(),
                 c.getId(),
                 String.valueOf(c.get("uid")),
+                normalizeTenantId(c.get("tid") == null ? null : String.valueOf(c.get("tid"))),
                 tv,
-                c.getExpiration()
+                c.getExpiration(),
+                roles
         );
     }
 
+    private static String normalizeTenantId(String value) {
+        String normalized = value == null ? "electrahub" : value.trim().toLowerCase(Locale.ROOT);
+        if (!normalized.matches("[a-z0-9][a-z0-9._:-]{0,63}")) {
+            throw new JwtException("Invalid tenant ID");
+        }
+        return normalized;
+    }
+
+    /**
+     * Executes is not expired for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     * @param exp input consumed by isNotExpired.
+     * @return result produced by isNotExpired.
+     */
     public boolean isNotExpired(Date exp) {
         return exp != null && exp.after(new Date());
     }
 }
-

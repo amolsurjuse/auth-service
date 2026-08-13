@@ -1,54 +1,57 @@
 package com.electrahub.identity.config;
 
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.*;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.*;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.Arrays;
 import java.util.List;
+import com.electrahub.identity.service.JwtService;
+import com.electrahub.identity.service.TokenDenylistService;
+import com.electrahub.identity.service.TokenVersionService;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfig.class);
 
-    @Value("${app.cors.allowed-origin-patterns:http://localhost:4200,http://localhost:8080,http://driver-portal-dev.electrahub.com:8080}")
-    private String allowedOriginPatterns;
 
-    @Bean
-   public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder encoder) {
-        DaoAuthenticationProvider p = new DaoAuthenticationProvider(userDetailsService);
-        p.setPasswordEncoder(encoder);
-        return p;
+    private final CorsProperties corsProperties;
+
+    /**
+     * Executes security config for `SecurityConfig`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @param corsProperties input consumed by SecurityConfig.
+     */
+    public SecurityConfig(CorsProperties corsProperties) {
+        LOGGER.info(" Entering SecurityConfig#SecurityConfig");
+        LOGGER.debug(" Entering SecurityConfig#SecurityConfig with debug context");
+        this.corsProperties = corsProperties;
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
-    }
-
+    /**
+     * Executes cors configuration source for `SecurityConfig`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @return result produced by corsConfigurationSource.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList());
+        config.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
         config.setAllowedMethods(List.of(
                 HttpMethod.GET.name(),
                 HttpMethod.POST.name(),
@@ -66,17 +69,27 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Executes filter chain for `SecurityConfig`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @param http input consumed by filterChain.
+     * @param jwtAuthFilter input consumed by filterChain.
+     * @return result produced by filterChain.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
 
         http
-                .cors(Customizer.withDefaults())
+                .cors(cors -> {})
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**",
                                 "/api/countries/**",
                                 "/actuator/health/**",
+                                "/actuator/prometheus",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html")
@@ -88,8 +101,17 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Create JwtAuthFilter as a Spring bean instead of using @Component on the filter.
+     * This prevents the servlet container from auto-registering the filter and
+     * avoids calling the servlet Filter init path which previously triggered a NPE.
+     */
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    public JwtAuthFilter jwtAuthFilter(
+            JwtService jwtService,
+            TokenDenylistService denylistService,
+            TokenVersionService tokenVersionService
+    ) {
+        return new JwtAuthFilter(jwtService, denylistService, tokenVersionService);
     }
 }

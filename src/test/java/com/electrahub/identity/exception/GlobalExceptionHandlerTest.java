@@ -1,10 +1,13 @@
 package com.electrahub.identity.exception;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.web.dto.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -16,9 +19,19 @@ import java.lang.reflect.Method;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalExceptionHandlerTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandlerTest.class);
 
+
+    /**
+     * Processes handle validation uses first error message for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleValidationUsesFirstErrorMessage() throws Exception {
+        LOGGER.info(" Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage");
+        LOGGER.debug(" Entering GlobalExceptionHandlerTest#handleValidationUsesFirstErrorMessage with debug context");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
         LoginRequest reqObj = new LoginRequest("bad", "");
@@ -40,6 +53,12 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().path()).isEqualTo("/api/auth/login");
     }
 
+    /**
+     * Processes handle bad request builds error for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleBadRequestBuildsError() {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
@@ -54,6 +73,12 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().path()).isEqualTo("/api/auth/register");
     }
 
+    /**
+     * Processes handle generic uses unexpected message for `GlobalExceptionHandlerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     */
     @Test
     void handleGenericUsesUnexpectedMessage() {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
@@ -66,6 +91,20 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Unexpected error");
         assertThat(response.getBody().path()).isEqualTo("/api/other");
+    }
+
+    @Test
+    void handleDisabledReturnsForbiddenWithOriginalMessage() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setRequestURI("/api/auth/login");
+
+        ResponseEntity<ApiError> response = handler.handleDisabled(new DisabledException("User account is pending deletion"), req);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("User account is pending deletion");
+        assertThat(response.getBody().path()).isEqualTo("/api/auth/login");
     }
 
     private static class TestController {

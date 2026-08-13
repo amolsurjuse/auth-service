@@ -6,8 +6,32 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
+    /**
+     * Retrieves find by token hash for `RefreshTokenRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.repository`.
+     * @param tokenHash input consumed by findByTokenHash.
+     * @return result produced by findByTokenHash.
+     */
     Optional<RefreshToken> findByTokenHash(String tokenHash);
-    void deleteByUser_Id(UUID userId);
-    void deleteByUser_IdAndDeviceId(UUID userId, String deviceId);
-}
 
+    Optional<RefreshToken> findTopByUserIdAndDeviceIdAndRevokedFalseOrderByCreatedAtDesc(UUID userId, String deviceId);
+    /**
+     * Removes delete by user id for `RefreshTokenRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.repository`.
+     * @param userId input consumed by deleteByUserId.
+     */
+    void deleteByUserId(UUID userId);
+    /**
+     * Removes delete by user id and device id for `RefreshTokenRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.repository`.
+     * @param userId input consumed by deleteByUserIdAndDeviceId.
+     * @param deviceId input consumed by deleteByUserIdAndDeviceId.
+     */
+    void deleteByUserIdAndDeviceId(UUID userId, String deviceId);
+}

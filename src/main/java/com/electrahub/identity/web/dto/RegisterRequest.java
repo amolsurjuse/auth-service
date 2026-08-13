@@ -9,5 +9,11 @@ public record RegisterRequest(
         @NotBlank String lastName,
         @Pattern(regexp = "^\\+?[1-9]\\d{7,14}$",
                 message = "Invalid phone number") String phoneNumber,
-        AddressDto address
-) {}
+        AddressDto address,
+        String application
+) {
+    public RegisterRequest(String email, String password, String firstName, String lastName,
+                           String phoneNumber, AddressDto address) {
+        this(email, password, firstName, lastName, phoneNumber, address, null);
+    }
+}

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-refresh-token-decouple-user-fk
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - tableExists:
+              tableName: refresh_tokens
+          - foreignKeyConstraintExists:
+              foreignKeyName: fk_refresh_tokens_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: refresh_tokens
+            constraintName: fk_refresh_tokens_user

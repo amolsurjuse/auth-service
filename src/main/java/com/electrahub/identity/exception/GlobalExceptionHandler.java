@@ -1,7 +1,13 @@
 package com.electrahub.identity.exception;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,9 +15,22 @@ import java.time.OffsetDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+
+    /**
+     * Processes handle validation for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param ex input consumed by handleValidation.
+     * @param req input consumed by handleValidation.
+     * @return result produced by handleValidation.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
+        LOGGER.info(" Entering GlobalExceptionHandler#handleValidation");
+        LOGGER.debug(" Entering GlobalExceptionHandler#handleValidation with debug context");
         String msg = ex.getBindingResult().getAllErrors().stream()
                 .findFirst()
                 .map(e -> e.getDefaultMessage())
@@ -19,16 +38,103 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, msg, req);
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        LOGGER.warn("Malformed request body while processing {} {}: {}", req.getMethod(), req.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "Malformed JSON request body", req);
+    }
+
+    /**
+     * Processes handle bad request for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param ex input consumed by handleBadRequest.
+     * @param req input consumed by handleBadRequest.
+     * @return result produced by handleBadRequest.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleBadRequest(IllegalArgumentException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiError> handleConflict(ConflictException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(OtpRateLimitException.class)
+    public ResponseEntity<ApiError> handleOtpRateLimit(OtpRateLimitException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ApiError(
+                        OffsetDateTime.now(),
+                        HttpStatus.TOO_MANY_REQUESTS.value(),
+                        HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                        ex.getMessage(),
+                        req.getRequestURI()
+                ));
+    }
+
+    /**
+     * Processes handle authentication for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param ex input consumed by handleAuthentication.
+     * @param req input consumed by handleAuthentication.
+     * @return result produced by handleAuthentication.
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, HttpServletRequest req) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid credentials", req);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(DisabledException ex, HttpServletRequest req) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), req);
+    }
+
+    /**
+     * Processes handle access denied for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param ex input consumed by handleAccessDenied.
+     * @param req input consumed by handleAccessDenied.
+     * @return result produced by handleAccessDenied.
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AuthorizationDeniedException ex, HttpServletRequest req) {
+        return build(HttpStatus.FORBIDDEN, "Access denied", req);
+    }
+
+    /**
+     * Processes handle generic for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param ex input consumed by handleGeneric.
+     * @param req input consumed by handleGeneric.
+     * @return result produced by handleGeneric.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest req) {
+        LOGGER.error("Unhandled exception while processing {} {}", req.getMethod(), req.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", req);
     }
 
+    /**
+     * Creates build for `GlobalExceptionHandler`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.exception`.
+     * @param status input consumed by build.
+     * @param msg input consumed by build.
+     * @param req input consumed by build.
+     * @return result produced by build.
+     */
     private ResponseEntity<ApiError> build(HttpStatus status, String msg, HttpServletRequest req) {
         ApiError body = new ApiError(
                 OffsetDateTime.now(),
@@ -40,4 +146,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
     }
 }
-

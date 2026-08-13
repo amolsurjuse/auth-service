@@ -1,13 +1,16 @@
 package com.electrahub.identity.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,90 +19,129 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class RedisRefreshSessionStoreTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisRefreshSessionStoreTest.class);
 
+
+    /**
+     * Executes put writes session and indexes for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void putWritesSessionAndIndexes() throws Exception {
+        LOGGER.info(" Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes");
+        LOGGER.debug(" Entering RedisRefreshSessionStoreTest#putWritesSessionAndIndexes with debug context");
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);
         SetOperations<String, String> sets = mock(SetOperations.class);
 
         when(redis.opsForValue()).thenReturn(values);
         when(redis.opsForSet()).thenReturn(sets);
-        when(om.writeValueAsString(any())).thenReturn("{\"ok\":true}");
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, om, "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
 
         var view = new RedisRefreshSessionStore.RefreshSessionView(
-                UUID.randomUUID(), "device", UUID.randomUUID(), OffsetDateTime.now().plusDays(1)
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "device|1",
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                OffsetDateTime.ofInstant(Instant.ofEpochMilli(1893456000000L), ZoneOffset.UTC)
         );
         store.put("hash", view, Duration.ofHours(1));
 
-        verify(values).set(eq("rt:hash"), eq("{\"ok\":true}"), eq(Duration.ofHours(1)));
+        verify(values).set(
+                eq("rt:hash"),
+                eq("00000000-0000-0000-0000-000000000001|device%7C1|00000000-0000-0000-0000-000000000002|1893456000000"),
+                eq(Duration.ofHours(1))
+        );
         verify(sets).add("rtu:" + view.userId(), "hash");
         verify(sets).add("rtd:" + view.userId() + ":" + view.deviceId(), "hash");
         verify(redis).expire("rtu:" + view.userId(), Duration.ofHours(7));
         verify(redis).expire("rtd:" + view.userId() + ":" + view.deviceId(), Duration.ofHours(7));
     }
 
+    /**
+     * Retrieves get if present reads and parses for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentReadsAndParses() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);
 
         when(redis.opsForValue()).thenReturn(values);
-        when(values.get("rt:hash")).thenReturn("{\"ok\":true}");
+        when(values.get("rt:hash"))
+                .thenReturn("00000000-0000-0000-0000-000000000001|device%7C1|00000000-0000-0000-0000-000000000002|1767225600000");
 
         var view = new RedisRefreshSessionStore.RefreshSessionView(
-                UUID.randomUUID(), "device", UUID.randomUUID(), OffsetDateTime.now().plusDays(1)
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "device|1",
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                OffsetDateTime.ofInstant(Instant.ofEpochMilli(1767225600000L), ZoneOffset.UTC)
         );
-        when(om.readValue("{\"ok\":true}", RedisRefreshSessionStore.RefreshSessionView.class)).thenReturn(view);
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, om, "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
 
         assertThat(store.getIfPresent("hash")).isEqualTo(view);
     }
 
+    /**
+     * Retrieves get if present returns null when missing for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentReturnsNullWhenMissing() {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);
 
         when(redis.opsForValue()).thenReturn(values);
         when(values.get("rt:hash")).thenReturn(null);
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, om, "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
 
         assertThat(store.getIfPresent("hash")).isNull();
     }
 
+    /**
+     * Retrieves get if present wraps exceptions for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void getIfPresentWrapsExceptions() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        ObjectMapper om = mock(ObjectMapper.class);
         ValueOperations<String, String> values = mock(ValueOperations.class);
 
         when(redis.opsForValue()).thenReturn(values);
         when(values.get("rt:hash")).thenReturn("bad");
-        when(om.readValue("bad", RedisRefreshSessionStore.RefreshSessionView.class)).thenThrow(new RuntimeException("boom"));
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, om, "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
 
         assertThatThrownBy(() -> store.getIfPresent("hash"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Redis refresh session read failed");
     }
 
+    /**
+     * Executes put wraps exceptions for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void putWrapsExceptions() throws Exception {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        ObjectMapper om = mock(ObjectMapper.class);
+        ValueOperations<String, String> values = mock(ValueOperations.class);
 
-        when(om.writeValueAsString(any())).thenThrow(new RuntimeException("boom"));
+        when(redis.opsForValue()).thenReturn(values);
+        doThrow(new RuntimeException("boom")).when(values).set(anyString(), anyString(), any(Duration.class));
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, om, "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
         var view = new RedisRefreshSessionStore.RefreshSessionView(
                 UUID.randomUUID(), "device", UUID.randomUUID(), OffsetDateTime.now().plusDays(1)
         );
@@ -109,13 +151,19 @@ class RedisRefreshSessionStoreTest {
                 .hasMessageContaining("Redis refresh session write failed");
     }
 
+    /**
+     * Removes delete and revoke methods clean keys for `RedisRefreshSessionStoreTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.service`.
+     */
     @Test
     void deleteAndRevokeMethodsCleanKeys() {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
         SetOperations<String, String> sets = mock(SetOperations.class);
         when(redis.opsForSet()).thenReturn(sets);
 
-        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, mock(ObjectMapper.class), "rt:", "rtu:", "rtd:");
+        RedisRefreshSessionStore store = new RedisRefreshSessionStore(redis, "rt:", "rtu:", "rtd:");
         UUID userId = UUID.randomUUID();
 
         store.delete("hash", userId, "device");

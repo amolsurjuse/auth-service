@@ -1,8 +1,14 @@
 package com.electrahub.identity.web;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.service.AuthService;
+import com.electrahub.identity.service.EmailVerificationService;
+import com.electrahub.identity.service.OAuthLoginService;
+import com.electrahub.identity.service.PasswordResetService;
 import com.electrahub.identity.service.TokenDenylistService;
 import com.electrahub.identity.service.TokenVersionService;
+import com.electrahub.identity.web.dto.GoogleOidcLoginRequest;
 import com.electrahub.identity.web.dto.AddressDto;
 import com.electrahub.identity.web.dto.LoginRequest;
 import com.electrahub.identity.web.dto.RegisterRequest;
@@ -22,10 +28,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class AuthControllerTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthControllerTest.class);
 
+
+    /**
+     * Creates register sets cookies and returns access token for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void registerSetsCookiesAndReturnsAccessToken() {
+        LOGGER.info(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken");
+        LOGGER.debug(" Entering AuthControllerTest#registerSetsCookiesAndReturnsAccessToken with debug context");
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
@@ -34,7 +51,7 @@ class AuthControllerTest {
         when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device").path("/").build());
         when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
 
         RegisterRequest req = new RegisterRequest("user@example.com", "password123", "First", "Last", "+12345678901",
                 new AddressDto("street", "city", "state", "12345", "US"));
@@ -46,9 +63,16 @@ class AuthControllerTest {
         assertThat(response.getBody().accessToken()).isEqualTo("access");
     }
 
+    /**
+     * Executes login sets cookies and returns access token for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void loginSetsCookiesAndReturnsAccessToken() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
@@ -57,7 +81,7 @@ class AuthControllerTest {
         when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device").path("/").build());
         when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
 
         LoginRequest req = new LoginRequest("user@example.com", "password");
         ResponseEntity<AuthController.AccessTokenResponse> response = controller.login(req, "did");
@@ -68,29 +92,126 @@ class AuthControllerTest {
     }
 
     @Test
-    void refreshWithoutCookiesReturnsUnauthorized() {
+    void googleLoginSetsCookiesAndReturnsAccessToken() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        when(oauthLoginService.loginWithGoogle(eq("google-id-token"), eq("nonce-1"), eq("device-1")))
+                .thenReturn(new AuthService.TokenPair("access", "refresh"));
+        when(cookieUtil.buildDeviceCookie(anyString())).thenReturn(ResponseCookie.from("did", "device-1").path("/").build());
+        when(cookieUtil.buildRefreshCookie(anyString(), any())).thenReturn(ResponseCookie.from("__Host-rt", "refresh").path("/").build());
 
-        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(null, null);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.googleLogin(
+                new GoogleOidcLoginRequest("google-id-token", "nonce-1"),
+                "device-1"
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().get(HttpHeaders.SET_COOKIE)).hasSize(2);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("access");
+    }
+
+    /**
+     * Updates refresh without cookies returns unauthorized for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
+    @Test
+    void refreshWithoutCookiesReturnsUnauthorized() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(null, null, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
+    void refreshAcceptsNativeBodyWhenCookiesAreMissing() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(authService.refreshWithFallback("old-refresh", "device-1", null, null))
+                .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
+        when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
+                .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 30);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(
+                null,
+                null,
+                new AuthController.RefreshRequest("old-refresh", "device-1")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("new-access");
+        assertThat(response.getBody().refreshToken()).isEqualTo("new-refresh");
+        assertThat(response.getBody().deviceId()).isEqualTo("device-1");
+    }
+
+    @Test
+    void refreshUsesNativeBodyWithCookieFallbackWhenBothArePresent() {
+        AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+        CookieUtil cookieUtil = mock(CookieUtil.class);
+        TokenDenylistService denylistService = mock(TokenDenylistService.class);
+        TokenVersionService tokenVersionService = mock(TokenVersionService.class);
+
+        when(authService.refreshWithFallback("fresh-native-refresh", "fresh-device", "fallback-cookie-refresh", "fallback-device"))
+                .thenReturn(new AuthService.TokenPair("new-access", "new-refresh"));
+        when(cookieUtil.buildRefreshCookie(eq("new-refresh"), any()))
+                .thenReturn(ResponseCookie.from("__Host-rt", "new-refresh").path("/").build());
+
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 30);
+
+        ResponseEntity<AuthController.AccessTokenResponse> response = controller.refresh(
+                "fallback-cookie-refresh",
+                "fallback-device",
+                new AuthController.RefreshRequest("fresh-native-refresh", "fresh-device")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().accessToken()).isEqualTo("new-access");
+        assertThat(response.getBody().refreshToken()).isEqualTo("new-refresh");
+        assertThat(response.getBody().deviceId()).isEqualTo("fresh-device");
+        verify(authService).refreshWithFallback("fresh-native-refresh", "fresh-device", "fallback-cookie-refresh", "fallback-device");
+    }
+
+    /**
+     * Executes logout device revokes and clears cookie for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
+    @Test
     void logoutDeviceRevokesAndClearsCookie() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
         when(cookieUtil.clearRefreshCookie()).thenReturn(ResponseCookie.from("__Host-rt", "").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         UUID userId = UUID.randomUUID();
@@ -105,16 +226,23 @@ class AuthControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    /**
+     * Executes logout all revokes all and bumps version for `AuthControllerTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.web`.
+     */
     @Test
     void logoutAllRevokesAllAndBumpsVersion() {
         AuthService authService = mock(AuthService.class);
+        OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
         CookieUtil cookieUtil = mock(CookieUtil.class);
         TokenDenylistService denylistService = mock(TokenDenylistService.class);
         TokenVersionService tokenVersionService = mock(TokenVersionService.class);
 
         when(cookieUtil.clearRefreshCookie()).thenReturn(ResponseCookie.from("__Host-rt", "").path("/").build());
 
-        AuthController controller = new AuthController(authService, cookieUtil, denylistService, tokenVersionService, 7);
+        AuthController controller = new AuthController(authService, oauthLoginService, cookieUtil, denylistService, tokenVersionService, mock(PasswordResetService.class), mock(EmailVerificationService.class), 7);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         UUID userId = UUID.randomUUID();

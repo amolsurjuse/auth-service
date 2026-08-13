@@ -1,15 +1,16 @@
 package com.electrahub.identity.config;
 
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.identity.service.*;
-import com.electrahub.identity.service.impl.UserDetailsServiceImpl;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -18,22 +19,20 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-@Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilter.class);
+
 
     private final JwtService jwtService;
-    private final UserDetailsServiceImpl userDetailsService;
     private final TokenDenylistService denylistService;
     private final TokenVersionService tokenVersionService;
 
     public JwtAuthFilter(
             JwtService jwtService,
-            UserDetailsServiceImpl userDetailsService,
             TokenDenylistService denylistService,
             TokenVersionService tokenVersionService
     ) {
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
         this.denylistService = denylistService;
         this.tokenVersionService = tokenVersionService;
     }
@@ -70,15 +69,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userDetails = userDetailsService.loadUserByUsername(parsed.subjectEmail());
+                var authorities = parsed.roles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .toList();
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(parsed.subjectEmail(), null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 // Pass useful info for logout endpoints
                 request.setAttribute("uid", parsed.uid());
+                request.setAttribute("tid", parsed.tenantId());
                 request.setAttribute("jti", parsed.jti());
                 request.setAttribute("exp", parsed.exp());
             }
@@ -90,7 +92,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * Executes remaining ttl for `JwtAuthFilter`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.identity.config`.
+     * @param exp input consumed by remainingTtl.
+     * @return result produced by remainingTtl.
+     */
     public static Duration remainingTtl(Date exp) {
+        LOGGER.info(" Entering JwtAuthFilter#remainingTtl");
+        LOGGER.debug(" Entering JwtAuthFilter#remainingTtl with debug context");
         long seconds = Math.max(0, exp.toInstant().getEpochSecond() - Instant.now().getEpochSecond());
         return Duration.ofSeconds(seconds);
     }

@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-verification-challenges
+      author: codex
+      changes:
+        - createTable:
+            tableName: verification_challenges
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: purpose, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: channel, type: varchar(32), constraints: { nullable: false } }
+              - column: { name: destination_hash, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: masked_destination, type: varchar(320), constraints: { nullable: false } }
+              - column: { name: code_hash, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: status, type: varchar(24), constraints: { nullable: false } }
+              - column: { name: failed_attempts, type: integer, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: max_attempts, type: integer, constraints: { nullable: false } }
+              - column: { name: expires_at, type: timestamp with time zone, constraints: { nullable: false } }
+              - column: { name: consumed_at, type: timestamp with time zone }
+              - column: { name: created_at, type: timestamp with time zone, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp with time zone, constraints: { nullable: false } }
+        - createIndex:
+            tableName: verification_challenges
+            indexName: idx_verification_challenge_lookup
+            columns:
+              - column: { name: user_id }
+              - column: { name: purpose }
+              - column: { name: status }
+              - column: { name: created_at }
+        - createIndex:
+            tableName: verification_challenges
+            indexName: idx_verification_challenge_expiry
+            columns:
+              - column: { name: expires_at }

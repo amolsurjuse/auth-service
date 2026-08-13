@@ -1,5 +1,7 @@
 package com.electrahub.identity.config;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -14,6 +16,8 @@ import java.util.Map;
 @Configuration
 @EnableCaching
 public class CacheConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheConfig.class);
+
 
     @Bean
     public CacheManager cacheManager(

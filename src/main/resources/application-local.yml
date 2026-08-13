@@ -34,3 +34,19 @@ logging:
     root: INFO
     com.electrahub.identity: DEBUG
     liquibase: INFO
+
+app:
+  user-service:
+    base-url: ${LOCAL_APP_USER_SERVICE_BASE_URL:http://127.0.0.1:8082}
+  security:
+    jwt:
+      refresh-token-ttl-days: ${APP_SECURITY_JWT_REFRESH_TOKEN_TTL_DAYS:30}
+      refresh-token-web-ttl-hours: ${APP_SECURITY_JWT_REFRESH_TOKEN_WEB_TTL_HOURS:24}
+      refresh-token-rotation-grace-seconds: ${APP_SECURITY_JWT_REFRESH_TOKEN_ROTATION_GRACE_SECONDS:60}
+    oauth:
+      google:
+        enabled: ${APP_SECURITY_OAUTH_GOOGLE_ENABLED:false}
+        issuer: ${APP_SECURITY_OAUTH_GOOGLE_ISSUER:https://accounts.google.com}
+        jwk-set-uri: ${APP_SECURITY_OAUTH_GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+        audiences: ${APP_SECURITY_OAUTH_GOOGLE_AUDIENCES:}
+        auto-provision-users: ${APP_SECURITY_OAUTH_GOOGLE_AUTO_PROVISION_USERS:true}

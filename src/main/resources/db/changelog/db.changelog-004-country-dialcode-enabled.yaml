@@ -1,0 +1,64 @@
+# yaml
+databaseChangeLog:
+  - changeSet:
+      id: 004-country-dialcode-enabled
+      author: amolsurjuse
+      changes:
+        - addColumn:
+            tableName: country
+            columns:
+              - column:
+                  name: dial_code
+                  type: varchar(8)
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: true
+
+        - sql:
+            sql: |
+              UPDATE country
+              SET dial_code = CASE iso_code
+                WHEN 'US' THEN '+1'
+                WHEN 'CA' THEN '+1'
+                WHEN 'GB' THEN '+44'
+                WHEN 'IE' THEN '+353'
+                WHEN 'DE' THEN '+49'
+                WHEN 'FR' THEN '+33'
+                WHEN 'NL' THEN '+31'
+                WHEN 'SE' THEN '+46'
+                WHEN 'NO' THEN '+47'
+                WHEN 'DK' THEN '+45'
+                WHEN 'FI' THEN '+358'
+                WHEN 'ES' THEN '+34'
+                WHEN 'IT' THEN '+39'
+                WHEN 'PT' THEN '+351'
+                WHEN 'CH' THEN '+41'
+                WHEN 'AT' THEN '+43'
+                WHEN 'AU' THEN '+61'
+                WHEN 'NZ' THEN '+64'
+                WHEN 'JP' THEN '+81'
+                WHEN 'SG' THEN '+65'
+                WHEN 'IN' THEN '+91'
+                WHEN 'AE' THEN '+971'
+                ELSE '+0'
+              END
+              WHERE dial_code IS NULL;
+
+        - update:
+            tableName: country
+            columns:
+              - column:
+                  name: enabled
+                  valueBoolean: true
+            where: enabled IS NULL
+
+        - addNotNullConstraint:
+            tableName: country
+            columnName: dial_code
+            columnDataType: varchar(8)
+
+        - addNotNullConstraint:
+            tableName: country
+            columnName: enabled
+            columnDataType: boolean
